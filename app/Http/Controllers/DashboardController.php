@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PumpSession;
 use App\Models\SensorReading;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -11,6 +12,18 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function latest(): JsonResponse
+    {
+        $latest = SensorReading::latest()->first();
+        $lastSeenTimestamp = Cache::get('device_last_seen');
+
+        return response()->json([
+            'reading' => $latest,
+            'next_interval' => (int) Cache::get('device_next_interval', 300),
+            'last_seen' => $lastSeenTimestamp,
+        ]);
+    }
+
     public function __invoke(): View
     {
         $user = Auth::user();
@@ -65,6 +78,7 @@ class DashboardController extends Controller
             'pumpSessions' => $pumpSessions,
             'dryingHours' => $dryingHours,
             'nextIrrigationEstimate' => $nextIrrigationEstimate,
+            'nextInterval' => (int) Cache::get('device_next_interval', 300),
         ]);
     }
 }

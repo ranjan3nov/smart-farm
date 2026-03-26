@@ -5,7 +5,8 @@
 <div class="p-6 flex flex-col gap-6" id="dashboard"
      data-readings="{{ $recentReadings->toJson() }}"
      data-latest="{{ $latest ? $latest->toJson() : 'null' }}"
-     data-interval="20">
+     data-interval="{{ $nextInterval }}"
+     data-latest-url="{{ route('dashboard.latest') }}">
 
     {{-- Header --}}
     <div class="flex items-center justify-between">
@@ -26,23 +27,25 @@
                 @endif
             </p>
         </div>
-        <div class="flex items-center gap-3">
-            {{-- Last update timer --}}
+        <div class="flex items-center gap-2">
+            {{-- Countdown timer --}}
             <div id="update-timer" class="flex items-center gap-1.5 text-xs text-gray-500">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span id="update-timer-text">
-                    @if($latest)
-                        Updated {{ $latest->created_at->diffForHumans() }}
-                    @else
-                        Waiting for data...
-                    @endif
+                    @if($latest) Next in {{ $nextInterval }}s @else Waiting for data... @endif
                 </span>
-                <span id="update-timer-bar" class="flex items-center gap-0.5">
-                    <span class="w-10 h-1 bg-gray-800 rounded-full overflow-hidden">
-                        <span id="update-timer-progress" class="block h-full bg-emerald-500 rounded-full transition-none" style="width:0%"></span>
-                    </span>
+                <span class="w-10 h-1 bg-gray-800 rounded-full overflow-hidden">
+                    <span id="update-timer-progress" class="block h-full bg-emerald-500 rounded-full transition-none" style="width:100%"></span>
                 </span>
             </div>
+
+            {{-- Refresh button --}}
+            <button id="refresh-btn" onclick="window._dashboardRefresh()"
+                    title="Fetch latest data now"
+                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
+                <svg id="refresh-icon" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Refresh
+            </button>
 
             {{-- Device status --}}
             <div id="device-status" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium
@@ -388,7 +391,8 @@
 (function () {
     const el = document.getElementById('dashboard');
     let readings = JSON.parse(el.dataset.readings || '[]');
-    const sendIntervalSecs = parseInt(el.dataset.interval || '20', 10);
+    let sendIntervalSecs = parseInt(el.dataset.interval || '300', 10);
+    const latestUrl = el.dataset.latestUrl;
 
     // --- Chart setup ---
     const ctx = document.getElementById('sensor-chart').getContext('2d');
@@ -476,16 +480,10 @@
         return 'Humid';
     }
 
-    // --- Last-update stopwatch ---
-    let lastDataAt = null;
+    // --- Timer / countdown state ---
+    let lastDataAt = Date.now(); // assume current on load
     let offlineSince = null;
-
-    function formatElapsed(secs) {
-        if (secs < 60) return `${secs}s ago`;
-        const m = Math.floor(secs / 60);
-        const s = secs % 60;
-        return `${m}m ${s}s ago`;
-    }
+    let pollTimer = null;
 
     function formatDuration(secs) {
         if (secs < 60) return `${secs}s`;
@@ -495,72 +493,124 @@
     }
 
     function tickTimer() {
-        if (!lastDataAt) { return; }
-
         const elapsed = Math.floor((Date.now() - lastDataAt) / 1000);
-        const timerText = document.getElementById('update-timer-text');
-        if (timerText) { timerText.textContent = 'Updated ' + formatElapsed(elapsed); }
+        const remaining = Math.max(0, sendIntervalSecs - elapsed);
 
-        // Progress bar: fills over one send interval, then overflows (turns orange/red)
+        // Countdown text
+        const timerText = document.getElementById('update-timer-text');
+        if (timerText) {
+            if (remaining > 0) {
+                timerText.textContent = `Next in ${formatDuration(remaining)}`;
+            } else {
+                timerText.textContent = elapsed < sendIntervalSecs * 2 ? 'Waiting...' : `Overdue by ${formatDuration(elapsed - sendIntervalSecs)}`;
+            }
+        }
+
+        // Progress bar drains left-to-right as countdown runs
         const progress = document.getElementById('update-timer-progress');
         if (progress) {
-            const pct = Math.min((elapsed / sendIntervalSecs) * 100, 100);
+            const pct = Math.max(0, (remaining / sendIntervalSecs) * 100);
             progress.style.width = pct + '%';
             progress.style.transition = 'width 1s linear';
             if (elapsed > sendIntervalSecs * 2) {
                 progress.className = 'block h-full bg-red-500 rounded-full';
-            } else if (elapsed > sendIntervalSecs * 1.5) {
+            } else if (elapsed > sendIntervalSecs * 1.2) {
                 progress.className = 'block h-full bg-yellow-500 rounded-full';
             } else {
                 progress.className = 'block h-full bg-emerald-500 rounded-full';
             }
         }
 
-        // Offline handling
+        // Offline detection — overdue by more than one full interval
+        const overdue = elapsed > sendIntervalSecs * 2;
         const offlineAlert = document.getElementById('offline-alert');
         const statusEl = document.getElementById('device-status');
         const statusDot = document.getElementById('device-status-dot');
         const statusText = document.getElementById('device-status-text');
 
-        if (elapsed > 60) {
-            if (!offlineSince) { offlineSince = Date.now() - (elapsed - 60) * 1000; }
+        if (overdue) {
+            if (!offlineSince) { offlineSince = Date.now(); }
             const offlineSecs = Math.floor((Date.now() - offlineSince) / 1000);
-
             if (offlineAlert) {
                 offlineAlert.classList.remove('hidden');
                 offlineAlert.classList.add('flex');
                 const dur = document.getElementById('offline-duration');
                 if (dur) { dur.textContent = `offline for ${formatDuration(offlineSecs)}.`; }
             }
-            if (statusEl) {
-                statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400';
-            }
+            if (statusEl) { statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400'; }
             if (statusDot) { statusDot.className = 'w-1.5 h-1.5 rounded-full bg-red-500'; }
             if (statusText) { statusText.textContent = 'Device offline'; }
         } else {
             offlineSince = null;
-            if (offlineAlert) {
-                offlineAlert.classList.add('hidden');
-                offlineAlert.classList.remove('flex');
-            }
+            if (offlineAlert) { offlineAlert.classList.add('hidden'); offlineAlert.classList.remove('flex'); }
         }
     }
 
     setInterval(tickTimer, 1000);
+    tickTimer();
 
-    // --- Reverb live updates ---
-    window.Echo.channel('farm').listen('SensorDataReceived', (data) => {
+    // --- Poll fallback + manual refresh ---
+    // Polls /dashboard/latest when Echo doesn't fire within the expected interval
+    function schedulePoll() {
+        clearTimeout(pollTimer);
+        // Wait interval + 5s grace, then poll
+        pollTimer = setTimeout(pollLatest, (sendIntervalSecs + 5) * 1000);
+    }
+
+    async function pollLatest() {
+        try {
+            const res = await fetch(latestUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (!res.ok) { return; }
+            const json = await res.json();
+            if (json.reading) {
+                // Update interval from server
+                sendIntervalSecs = json.next_interval || sendIntervalSecs;
+                applyReading(json.reading);
+            }
+        } catch (e) {
+            // silently ignore network errors
+        } finally {
+            schedulePoll();
+        }
+    }
+
+    window._dashboardRefresh = async function () {
+        const btn = document.getElementById('refresh-btn');
+        const icon = document.getElementById('refresh-icon');
+        if (btn) { btn.disabled = true; }
+        if (icon) { icon.classList.add('animate-spin'); }
+        try {
+            const res = await fetch(latestUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            if (res.ok) {
+                const json = await res.json();
+                if (json.reading) {
+                    sendIntervalSecs = json.next_interval || sendIntervalSecs;
+                    applyReading(json.reading);
+                }
+            }
+        } catch (e) {}
+        if (btn) { btn.disabled = false; }
+        if (icon) { icon.classList.remove('animate-spin'); }
+    };
+
+    schedulePoll();
+
+    // --- Reading applied on both Echo push and poll ---
+    function applyReading(data) {
         lastDataAt = Date.now();
         offlineSince = null;
+        sendIntervalSecs = data.next_interval || sendIntervalSecs;
 
-        // Reset timer progress bar
+        // Reset countdown bar
         const progress = document.getElementById('update-timer-progress');
         if (progress) {
             progress.style.transition = 'none';
-            progress.style.width = '0%';
+            progress.style.width = '100%';
         }
 
-        // Online status
+        schedulePoll(); // reset poll timer on every fresh reading
+
+        // Online status pill
         const statusEl = document.getElementById('device-status');
         const statusDot = document.getElementById('device-status-dot');
         const statusText = document.getElementById('device-status-text');
@@ -644,6 +694,11 @@
         chart.data.datasets[2].data = readings.map(r => r.temp);
         chart.data.datasets[3].data = readings.map(r => r.humidity);
         chart.update();
+    }
+
+    // --- Reverb live updates ---
+    window.Echo.channel('farm').listen('SensorDataReceived', (data) => {
+        applyReading(data);
     });
 })();
 </script>

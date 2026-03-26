@@ -64,6 +64,9 @@ class SensorDataController extends Controller
 
         $nextInterval = $isAlertState ? 20 : 300;
 
+        // Store so dashboard can show the correct countdown
+        Cache::put('device_next_interval', $nextInterval, now()->addHours(1));
+
         return response()->json(['pump' => $pumpCommand, 'next_interval' => $nextInterval]);
     }
 }
