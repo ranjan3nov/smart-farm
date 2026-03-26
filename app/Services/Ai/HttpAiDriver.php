@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Services\Ai;
+
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+class HttpAiDriver implements AiDriverInterface
+{
+    public function __construct(
+        private readonly string $endpoint,
+        private readonly ?string $apiKey = null,
+    ) {}
+
+    /** @param  array<string, mixed>  $payload */
+    public function decide(array $payload): array
+    {
+        try {
+            $request = Http::timeout(10)
+                ->connectTimeout(5)
+                ->retry(2, 1000);
+
+            if ($this->apiKey) {
+                $request = $request->withToken($this->apiKey);
+            }
+
+            $response = $request->post($this->endpoint, $payload)->throw();
+
+            $data = $response->json();
+
+            return [
+                'pump' => strtoupper($data['pump'] ?? 'OFF') === 'ON' ? 'ON' : 'OFF',
+                'reason' => $data['reason'] ?? 'No reason provided.',
+            ];
+        } catch (ConnectionException $e) {
+            Log::warning('AI driver connection failed', ['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('AI driver error', ['error' => $e->getMessage()]);
+        }
+
+        return ['pump' => 'OFF', 'reason' => 'AI unavailable — defaulting to pump OFF.'];
+    }
+}
