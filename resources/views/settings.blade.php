@@ -94,7 +94,7 @@
                     <label class="text-sm font-medium text-gray-300">Tank Height (cm)</label>
                     <input name="tank_height_cm" type="number" value="{{ old('tank_height_cm', config('farm.tank_height_cm')) }}"
                            class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('tank_height_cm') border-red-500 @enderror">
-                    <p class="text-xs text-gray-500">Interior height of your water tank</p>
+                    <p class="text-xs text-gray-500">Set to the same value as the ESP32 empty threshold in firmware (default 20 cm). If you change the tank, update both here and in the .ino file.</p>
                     @error('tank_height_cm')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex flex-col gap-1.5">
@@ -187,9 +187,10 @@
     <span class="text-blue-300">"temp_next_6h"</span>: <span class="text-gray-500">[</span><span class="text-amber-300">24.1</span>, <span class="text-amber-300">25.0</span>, <span class="text-amber-300">26.3</span>, <span class="text-amber-300">25.8</span>, <span class="text-amber-300">24.5</span>, <span class="text-amber-300">23.0</span><span class="text-gray-500">]</span>
   <span class="text-gray-500">},</span>
   <span class="text-emerald-400">"context"</span>: <span class="text-gray-500">{</span>
-    <span class="text-blue-300">"last_pump_command"</span>:    <span class="text-green-300">"OFF"</span>,          <span class="text-gray-600">// last decision sent to device</span>
+    <span class="text-blue-300">"plant_name"</span>:          <span class="text-green-300">"Tomatoes"</span>,        <span class="text-gray-600">// null if not set in Plant Profile</span>
+    <span class="text-blue-300">"last_pump_command"</span>:    <span class="text-green-300">"OFF"</span>,             <span class="text-gray-600">// last decision sent to device</span>
     <span class="text-blue-300">"last_pump_command_at"</span>: <span class="text-green-300">"2026-03-26T08:00:00Z"</span>,
-    <span class="text-blue-300">"moisture_threshold"</span>:   <span class="text-amber-300">30</span>              <span class="text-gray-600">// your configured dry threshold</span>
+    <span class="text-blue-300">"moisture_threshold"</span>:   <span class="text-amber-300">30</span>                 <span class="text-gray-600">// your configured dry threshold</span>
   <span class="text-gray-500">}</span>
 <span class="text-gray-500">}</span></pre>
                     </div>

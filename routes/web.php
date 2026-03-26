@@ -17,6 +17,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', fn () => redirect()->route('dashboard'));
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/docs', fn () => view('docs'))->name('docs');
 
     Route::get('/settings', [SettingsController::class, 'show'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
