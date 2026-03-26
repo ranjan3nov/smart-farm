@@ -54,6 +54,16 @@ class SensorDataController extends Controller
 
         Cache::put('pump_command_previous', $pumpCommand, now()->addHours(1));
 
-        return response()->json(['pump' => $pumpCommand]);
+        // Tell the device how long to wait before the next send.
+        // Alert mode (20s): pump is running, soil is dry, or tank is empty.
+        // Normal mode (300s): everything is fine — no need to hammer the server.
+        $threshold = (int) config('farm.moisture_threshold', 30);
+        $isAlertState = $pumpCommand === 'ON'
+            || $reading->tank_status === 'EMPTY'
+            || $reading->moisture_percent < $threshold;
+
+        $nextInterval = $isAlertState ? 20 : 300;
+
+        return response()->json(['pump' => $pumpCommand, 'next_interval' => $nextInterval]);
     }
 }

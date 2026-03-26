@@ -28,14 +28,16 @@ class DashboardController extends Controller
         $lastSeenTimestamp = Cache::get('device_last_seen');
         $lastSeen = $lastSeenTimestamp ? Carbon::createFromTimestamp($lastSeenTimestamp) : null;
 
-        // Pump sessions for the history panel
-        $pumpSessions = PumpSession::whereNotNull('pump_off_at')
-            ->latest('pump_on_at')
-            ->limit(5)
-            ->get();
+        // Scope pump sessions to the current plant period
+        $sessionQuery = PumpSession::whereNotNull('pump_off_at');
+        if ($plantStartedAt) {
+            $sessionQuery->where('pump_on_at', '>=', $plantStartedAt);
+        }
+
+        $pumpSessions = (clone $sessionQuery)->latest('pump_on_at')->limit(5)->get();
 
         // Drying trend: find how long it took soil to go dry after last completed irrigation
-        $lastSession = PumpSession::whereNotNull('pump_off_at')->latest('pump_on_at')->first();
+        $lastSession = (clone $sessionQuery)->latest('pump_on_at')->first();
         $dryingHours = null;
         $nextIrrigationEstimate = null;
 

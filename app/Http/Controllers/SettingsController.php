@@ -6,6 +6,7 @@ use App\Http\Requests\UpdateSettingsRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class SettingsController extends Controller
@@ -41,7 +42,13 @@ class SettingsController extends Controller
     {
         Auth::user()->update(['plant_started_at' => now()]);
 
-        return back()->with('success', 'Plant reset. History will now be tracked from today.');
+        // Clear pump state so the old plant's last command doesn't carry over
+        Cache::forget('pump_command');
+        Cache::forget('pump_command_previous');
+        Cache::forget('pump_command_at');
+        Cache::forget('ai_decision_throttle');
+
+        return back()->with('success', 'Plant reset. History and pump state cleared from today.');
     }
 
     /** @param array<string, string|int|float|null> $values */
