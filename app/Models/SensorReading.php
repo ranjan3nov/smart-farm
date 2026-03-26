@@ -11,6 +11,15 @@ class SensorReading extends Model
     /** @use HasFactory<SensorReadingFactory> */
     use HasFactory;
 
+    protected $appends = [
+        'moisture_percent',
+        'rain_percent',
+        'tank_fill_percent',
+        'soil_status',
+        'soil_color',
+        'rain_status',
+    ];
+
     protected $fillable = [
         'moisture',
         'rain',
