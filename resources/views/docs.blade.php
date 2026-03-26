@@ -2,7 +2,7 @@
 @section('title', 'How It Works')
 
 @section('content')
-<div class="p-6 max-w-4xl flex flex-col gap-8">
+<div class="p-6 flex flex-col gap-8">
 
     {{-- Header --}}
     <div>
@@ -53,28 +53,62 @@
     {{-- Hardware --}}
     <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col gap-5">
         <h2 class="text-sm font-semibold text-white">Hardware Components</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @php
                 $hardware = [
-                    ['name' => 'ESP32 Dev Module', 'pin' => null, 'desc' => 'Main microcontroller. Connects to WiFi via WiFiManager, hosts a debug web UI on port 80, and manages all sensor reads and HTTP POSTs.', 'color' => 'bg-amber-500/10 text-amber-400'],
-                    ['name' => 'Capacitive Soil Sensor', 'pin' => 'GPIO 34 (ADC)', 'desc' => 'Reads 0–4095. High (~4095) = bone dry, Low (~0) = fully wet. Raw value is sent as-is; server converts to moisture %.', 'color' => 'bg-amber-500/10 text-amber-400'],
-                    ['name' => 'Rain Sensor Module', 'pin' => 'GPIO 32 (ADC)', 'desc' => 'Same polarity as soil — High = dry/no rain, Low = raining. Server inverts to get rain %. Detects active rainfall, not residual moisture.', 'color' => 'bg-blue-500/10 text-blue-400'],
-                    ['name' => 'DHT11', 'pin' => 'GPIO 4 (Digital)', 'desc' => 'Temperature (°C) and air humidity (%). If the read returns NaN the entire send cycle is skipped — no bad data is ever stored.', 'color' => 'bg-orange-500/10 text-orange-400'],
-                    ['name' => 'HC-SR04 Ultrasonic', 'pin' => 'Trig: GPIO 5 · Echo: GPIO 18', 'desc' => 'Measures distance from sensor to water surface. Mounted at top of tank. Distance > tank threshold = EMPTY. 30ms pulse timeout prevents lockup on air pockets.', 'color' => 'bg-teal-500/10 text-teal-400'],
-                    ['name' => 'Relay + Water Pump', 'pin' => 'GPIO 25 (Relay IN)', 'desc' => 'Relay controls pump. Starts LOW (off) on boot. Pump only runs if Laravel says ON and local tank check passes — two independent safety layers.', 'color' => 'bg-emerald-500/10 text-emerald-400'],
+                    [
+                        'name' => 'ESP32 Dev Module', 'pin' => null, 'color' => 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                        'use' => 'Brain of the system — reads every sensor and talks to the server.',
+                        'desc' => 'Connects to WiFi via WiFiManager captive portal. Hosts a debug web UI on port 80 (visit its IP in a browser). Sends sensor data on an adaptive interval and controls the relay based on server response.',
+                        'fail' => 'If it can\'t reach WiFi on boot, it broadcasts a "Smart-Plant" hotspot for reconfiguration. If the server is unreachable, the pump relay stays LOW (off) as a safe default.',
+                    ],
+                    [
+                        'name' => 'Capacitive Soil Sensor', 'pin' => 'GPIO 34 (ADC)', 'color' => 'bg-lime-500/10 text-lime-400 border-lime-500/20',
+                        'use' => 'Tells the system when the soil is dry enough to need watering.',
+                        'desc' => 'Reads ADC 0–4095. High (~4095) = bone dry, Low (~0) = fully saturated. Capacitive type — no corrosion unlike resistive probes. Raw value sent to server; moisture % computed as (1 − raw/4095) × 100.',
+                        'fail' => 'A stuck-high reading (always ~4095) usually means a loose wire or broken probe. The AI will keep seeing "dry" soil and may try to water repeatedly — check the connection if the pump runs unexpectedly.',
+                    ],
+                    [
+                        'name' => 'Rain Sensor Module', 'pin' => 'GPIO 32 (ADC)', 'color' => 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+                        'use' => 'Prevents watering during rainfall so you don\'t waterlog the plant.',
+                        'desc' => 'Same polarity as soil — High = dry/no rain, Low = raining. Server inverts to rain %. Sent to the AI as context; the AI can choose to skip irrigation if rain is detected.',
+                        'fail' => 'If the sensor pad corrodes or gets dirty it may report permanent rain (low reading). The AI will see 100% rain and likely skip watering. Clean the pad or replace the module.',
+                    ],
+                    [
+                        'name' => 'DHT11 / DHT22', 'pin' => 'GPIO 4 (Digital)', 'color' => 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                        'use' => 'Provides ambient temperature and humidity so the AI can account for hot/dry conditions.',
+                        'desc' => 'DHT11: integer °C, 0–50°C range, ±2°C accuracy. DHT22: decimal °C, −40–80°C range, ±0.5°C accuracy. The firmware uses DHT11 by default — if your module is a DHT22 change DHTTYPE in the .ino. If the read returns NaN the entire cycle is skipped.',
+                        'fail' => 'Wrong readings (e.g. 2°C in a warm room) almost always mean DHTTYPE is mismatched — DHT22 data read as DHT11 produces garbage. A missing 10kΩ pull-up resistor on the data line also causes bad reads. NaN / failed reads skip the send cycle entirely.',
+                    ],
+                    [
+                        'name' => 'HC-SR04 Ultrasonic', 'pin' => 'Trig: GPIO 5 · Echo: GPIO 18', 'color' => 'bg-teal-500/10 text-teal-400 border-teal-500/20',
+                        'use' => 'Monitors how much water is left in the tank and stops the pump when it\'s empty.',
+                        'desc' => 'Mounted at the top of the tank pointing down at the water surface. Measures distance in cm. Distance > tank_height_cm = EMPTY. 30ms pulse timeout prevents a lockup if no echo returns (e.g. air pocket).',
+                        'fail' => 'A timeout (returns 0) is treated as EMPTY — pump is forced off, which is the safe default. Foam or turbulent water can scatter the pulse and cause false EMPTY readings. Tilt the sensor slightly if the tank surface is disturbed.',
+                    ],
+                    [
+                        'name' => 'Relay + Water Pump', 'pin' => 'GPIO 25 (Relay IN)', 'color' => 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                        'use' => 'Physically switches the pump on and off based on server commands.',
+                        'desc' => 'Relay starts LOW (pump off) on every boot. Pump only energises if the server says ON AND the local tank check passes — two independent safety checks. Duration is tracked as a PumpSession on every ON→OFF transition.',
+                        'fail' => 'If the relay clicks but the pump doesn\'t run, check the pump power supply — the ESP32 cannot drive a pump directly. If the pump runs but tank shows EMPTY, the ultrasonic sensor may be misaligned or the tank_height_cm threshold needs adjustment in Settings.',
+                    ],
                 ];
             @endphp
             @foreach($hardware as $hw)
-                <div class="flex gap-3">
-                    <div class="rounded-full shrink-0 mt-1.5 w-0.5 self-stretch {{ $hw['color'] }}"></div>
+                <div class="bg-gray-800/40 border border-gray-700/50 rounded-xl p-4 flex flex-col gap-3">
                     <div>
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-sm font-medium text-white">{{ $hw['name'] }}</span>
+                            <span class="text-sm font-semibold text-white">{{ $hw['name'] }}</span>
                             @if($hw['pin'])
                                 <code class="text-xs px-1.5 py-0.5 bg-gray-800 text-gray-400 rounded font-mono">{{ $hw['pin'] }}</code>
                             @endif
                         </div>
-                        <p class="text-xs text-gray-500 mt-1 leading-relaxed">{{ $hw['desc'] }}</p>
+                        <p class="text-xs font-medium text-emerald-400 mt-1">{{ $hw['use'] }}</p>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">{{ $hw['desc'] }}</p>
+                    <div class="border-t border-gray-700/50 pt-2.5">
+                        <p class="text-xs text-gray-600 font-medium mb-1">If it fails</p>
+                        <p class="text-xs text-gray-500 leading-relaxed">{{ $hw['fail'] }}</p>
                     </div>
                 </div>
             @endforeach
