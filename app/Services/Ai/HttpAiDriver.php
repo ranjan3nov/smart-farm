@@ -9,13 +9,17 @@ use Illuminate\Support\Facades\Log;
 class HttpAiDriver implements AiDriverInterface
 {
     public function __construct(
-        private readonly string $endpoint,
+        private readonly ?string $endpoint,
         private readonly ?string $apiKey = null,
     ) {}
 
     /** @param  array<string, mixed>  $payload */
     public function decide(array $payload): array
     {
+        if (! $this->endpoint) {
+            return ['pump' => 'OFF', 'reason' => 'AI endpoint not configured.'];
+        }
+
         try {
             $request = Http::timeout(10)
                 ->connectTimeout(5)
