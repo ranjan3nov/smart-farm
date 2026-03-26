@@ -94,7 +94,7 @@
                     <label class="text-sm font-medium text-gray-300">Tank Height (cm)</label>
                     <input name="tank_height_cm" type="number" value="{{ old('tank_height_cm', config('farm.tank_height_cm')) }}"
                            class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('tank_height_cm') border-red-500 @enderror">
-                    <p class="text-xs text-gray-500">Set to the same value as the ESP32 empty threshold in firmware (default 20 cm). If you change the tank, update both here and in the .ino file.</p>
+                    <p class="text-xs text-gray-500">Distance from sensor to water surface when tank is empty. Sent to the device each sync — no firmware change needed.</p>
                     @error('tank_height_cm')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex flex-col gap-1.5">

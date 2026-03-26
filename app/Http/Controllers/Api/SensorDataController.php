@@ -64,6 +64,10 @@ class SensorDataController extends Controller
 
         $nextInterval = $isAlertState ? 20 : 300;
 
-        return response()->json(['pump' => $pumpCommand, 'next_interval' => $nextInterval]);
+        return response()->json([
+            'pump' => $pumpCommand,
+            'next_interval' => $nextInterval,
+            'tank_height_cm' => (int) config('farm.tank_height_cm', 20),
+        ]);
     }
 }
