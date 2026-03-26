@@ -6,10 +6,11 @@ return [
     'longitude' => env('FARM_LONGITUDE', null),
 
     /*
-     * Tank height in cm. Used to calculate fill percentage from ultrasonic distance.
-     * Set to the interior height of your water tank.
+     * Tank height in cm — must match the ESP32 empty threshold (hardcoded at 20 cm).
+     * This is the distance from the ultrasonic sensor to the bottom of the tank.
+     * Default 20 aligns with: bool tankEmpty = (waterDistance > 20.0)
      */
-    'tank_height_cm' => env('FARM_TANK_HEIGHT_CM', 200),
+    'tank_height_cm' => env('FARM_TANK_HEIGHT_CM', 20),
 
     /*
      * Soil moisture threshold (0–100 %) below which the AI is nudged to turn the pump ON.

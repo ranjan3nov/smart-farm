@@ -3,6 +3,7 @@
 namespace App\Services\Ai;
 
 use App\Models\SensorReading;
+use App\Models\User;
 use App\Services\Weather\OpenMeteoClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -35,6 +36,7 @@ class AiDecisionService
 
         $lastCommand = Cache::get('pump_command', 'OFF');
         $lastCommandAt = Cache::get('pump_command_at');
+        $plantName = User::value('plant_name');
 
         $payload = [
             'sensor' => [
@@ -49,6 +51,7 @@ class AiDecisionService
             ],
             'weather' => $weatherData,
             'context' => [
+                'plant_name' => $plantName,
                 'last_pump_command' => $lastCommand,
                 'last_pump_command_at' => $lastCommandAt,
                 'moisture_threshold' => config('farm.moisture_threshold', 30),
