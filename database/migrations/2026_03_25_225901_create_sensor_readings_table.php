@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::create('sensor_readings', function (Blueprint $table) {
             $table->id();
-            $table->unsignedSmallInteger('moisture');
-            $table->unsignedSmallInteger('rain');
-            $table->float('temp');
-            $table->float('humidity');
-            $table->float('water_dist');
-            $table->enum('tank_status', ['OK', 'EMPTY']);
+            $table->unsignedSmallInteger('moisture')->nullable();
+            $table->unsignedSmallInteger('rain')->nullable();
+            $table->float('temp')->nullable();
+            $table->float('humidity')->nullable();
+            $table->float('water_dist')->nullable();
+            $table->enum('tank_status', ['OK', 'EMPTY'])->nullable();
             $table->enum('pump_command', ['ON', 'OFF'])->default('OFF');
             $table->text('ai_reason')->nullable();
             $table->timestamps();
@@ -24,5 +24,8 @@ return new class extends Migration
         });
     }
 
-    public function down(): void {}
+    public function down(): void
+    {
+        //
+    }
 };
