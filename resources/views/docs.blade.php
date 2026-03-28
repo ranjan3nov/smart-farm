@@ -75,10 +75,10 @@
                         'fail' => 'If the sensor pad corrodes or gets dirty it may report permanent rain (low reading). The AI will see 100% rain and likely skip watering. Clean the pad or replace the module.',
                     ],
                     [
-                        'name' => 'DHT11 / DHT22', 'pin' => 'GPIO 4 (Digital)', 'color' => 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                        'name' => 'DHT22', 'pin' => 'GPIO 4 (Digital)', 'color' => 'bg-orange-500/10 text-orange-400 border-orange-500/20',
                         'use' => 'Provides ambient temperature and humidity so the AI can account for hot/dry conditions.',
-                        'desc' => 'DHT11: integer °C, 0–50°C range, ±2°C accuracy. DHT22: decimal °C, −40–80°C range, ±0.5°C accuracy. The firmware uses DHT11 by default — if your module is a DHT22 change DHTTYPE in the .ino. If the read returns NaN the entire cycle is skipped.',
-                        'fail' => 'Wrong readings (e.g. 2°C in a warm room) almost always mean DHTTYPE is mismatched — DHT22 data read as DHT11 produces garbage. A missing 10kΩ pull-up resistor on the data line also causes bad reads. NaN / failed reads skip the send cycle entirely.',
+                        'desc' => 'Decimal °C precision, −40–80°C range, ±0.5°C accuracy, 0–100% RH. Requires a 2s warm-up after power-on before the first valid read. Powered at 3.3V; needs a 4.7kΩ–10kΩ pull-up resistor between DATA and VCC.',
+                        'fail' => 'NaN on first boot is normal — DHT22 needs ~2s to stabilise. Persistent NaN means a missing pull-up resistor or a loose data wire. If temp/humidity arrive as null the server still stores the reading; only soil moisture drives the pump decision.',
                     ],
                     [
                         'name' => 'HC-SR04 Ultrasonic', 'pin' => 'Trig: GPIO 5 · Echo: GPIO 18', 'color' => 'bg-teal-500/10 text-teal-400 border-teal-500/20',
