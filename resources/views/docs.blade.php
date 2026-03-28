@@ -63,10 +63,10 @@
                         'fail' => 'If it can\'t reach WiFi on boot, it broadcasts a "Smart-Plant" hotspot for reconfiguration. If the server is unreachable, the pump relay stays LOW (off) as a safe default.',
                     ],
                     [
-                        'name' => 'Capacitive Soil Sensor', 'pin' => 'GPIO 34 (ADC)', 'color' => 'bg-lime-500/10 text-lime-400 border-lime-500/20',
+                        'name' => 'Electron Soil Moisture Sensor', 'pin' => 'GPIO 34 (ADC)', 'color' => 'bg-lime-500/10 text-lime-400 border-lime-500/20',
                         'use' => 'Tells the system when the soil is dry enough to need watering.',
-                        'desc' => 'Reads ADC 0–4095. High (~4095) = bone dry, Low (~0) = fully saturated. Capacitive type — no corrosion unlike resistive probes. Raw value sent to server; moisture % computed as (1 − raw/4095) × 100.',
-                        'fail' => 'A stuck-high reading (always ~4095) usually means a loose wire or broken probe. The AI will keep seeing "dry" soil and may try to water repeatedly — check the connection if the pump runs unexpectedly.',
+                        'desc' => 'Resistive sensor — reads ADC 0–4095. High (~4095) = bone dry, Low (~0) = fully saturated. Raw value sent to server; moisture % computed as (1 − raw/4095) × 100. Powered at 3.3V via ESP32.',
+                        'fail' => 'A stuck-high reading (always ~4095) usually means a loose wire or dry-cracked probe. A stuck-low reading may indicate corrosion on the probes — clean with a dry cloth. The AI will keep seeing "dry" soil and may water repeatedly if the probe is faulty.',
                     ],
                     [
                         'name' => 'Rain Sensor Module', 'pin' => 'GPIO 32 (ADC)', 'color' => 'bg-blue-500/10 text-blue-400 border-blue-500/20',
