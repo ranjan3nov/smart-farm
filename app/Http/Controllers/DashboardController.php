@@ -12,6 +12,20 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function rawData(): JsonResponse
+    {
+        $user = Auth::user();
+        $query = SensorReading::latest();
+
+        if ($user->plant_started_at) {
+            $query->where('created_at', '>=', $user->plant_started_at);
+        }
+
+        $readings = $query->limit(100)->get();
+
+        return response()->json($readings);
+    }
+
     public function latest(): JsonResponse
     {
         $latest = SensorReading::latest()->first();

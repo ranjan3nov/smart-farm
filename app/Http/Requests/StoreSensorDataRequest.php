@@ -15,12 +15,12 @@ class StoreSensorDataRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'moisture' => ['required', 'integer', 'min:0', 'max:4095'],
-            'rain' => ['required', 'integer', 'min:0', 'max:4095'],
-            'temp' => ['required', 'numeric'],
-            'humidity' => ['required', 'numeric', 'min:0', 'max:100'],
-            'water_dist' => ['required', 'numeric', 'min:0'],
-            'tank_status' => ['required', 'in:OK,EMPTY'],
+            'moisture' => ['nullable', 'integer', 'min:0', 'max:4095'],
+            'rain' => ['nullable', 'integer', 'min:0', 'max:4095'],
+            'temp' => ['nullable', 'numeric'],
+            'humidity' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'water_dist' => ['nullable', 'numeric', 'min:0'],
+            'tank_status' => ['nullable', 'in:OK,EMPTY'],
         ];
     }
 }

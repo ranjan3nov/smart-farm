@@ -29,6 +29,7 @@ class SettingsController extends Controller
             'FARM_TANK_HEIGHT_CM' => $data['tank_height_cm'],
             'FARM_MOISTURE_THRESHOLD' => $data['moisture_threshold'],
             'FARM_AI_DECISION_INTERVAL' => $data['ai_decision_interval'],
+            'FARM_SEND_INTERVAL' => $data['send_interval'],
             'FARM_AI_ENDPOINT' => $data['ai_endpoint'] ?? '',
             'FARM_AI_API_KEY' => $data['ai_api_key'] ?? '',
         ]);

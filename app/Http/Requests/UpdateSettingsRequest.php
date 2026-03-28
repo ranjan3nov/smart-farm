@@ -22,6 +22,7 @@ class UpdateSettingsRequest extends FormRequest
             'tank_height_cm' => ['required', 'integer', 'min:10', 'max:1000'],
             'moisture_threshold' => ['required', 'integer', 'min:0', 'max:100'],
             'ai_decision_interval' => ['required', 'integer', 'min:1', 'max:60'],
+            'send_interval' => ['required', 'integer', 'min:10', 'max:3600'],
             'ai_endpoint' => ['nullable', 'url'],
             'ai_api_key' => ['nullable', 'string'],
         ];

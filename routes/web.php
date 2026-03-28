@@ -18,6 +18,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/dashboard/latest', [DashboardController::class, 'latest'])->name('dashboard.latest');
+    Route::get('/dashboard/raw', [DashboardController::class, 'rawData'])->name('dashboard.raw');
     Route::get('/docs', fn () => view('docs'))->name('docs');
 
     Route::get('/settings', [SettingsController::class, 'show'])->name('settings');

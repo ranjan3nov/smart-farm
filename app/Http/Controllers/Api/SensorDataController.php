@@ -62,7 +62,7 @@ class SensorDataController extends Controller
             || $reading->tank_status === 'EMPTY'
             || $reading->moisture_percent < $threshold;
 
-        $nextInterval = $isAlertState ? 20 : 300;
+        $nextInterval = $isAlertState ? 20 : (int) config('farm.send_interval_seconds', 300);
 
         // Store so dashboard can show the correct countdown
         Cache::put('device_next_interval', $nextInterval, now()->addHours(1));

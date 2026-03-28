@@ -22,6 +22,12 @@ return [
      */
     'ai_decision_interval_minutes' => env('FARM_AI_DECISION_INTERVAL', 5),
 
+    /*
+     * How often (in seconds) the device sends sensor readings in normal (non-alert) mode.
+     * Alert mode always uses 20s regardless of this setting.
+     */
+    'send_interval_seconds' => env('FARM_SEND_INTERVAL', 300),
+
     'ai' => [
         'endpoint' => env('FARM_AI_ENDPOINT', null),
         'api_key' => env('FARM_AI_API_KEY', null),
