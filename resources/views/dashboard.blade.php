@@ -6,7 +6,8 @@
      data-readings="{{ $recentReadings->toJson() }}"
      data-latest="{{ $latest ? $latest->toJson() : 'null' }}"
      data-interval="{{ $nextInterval }}"
-     data-latest-url="{{ route('dashboard.latest') }}">
+     data-latest-url="{{ route('dashboard.latest') }}"
+>
 
     {{-- Header --}}
     <div class="flex items-center justify-between">
@@ -39,13 +40,13 @@
                 </span>
             </div>
 
-            {{-- Refresh button --}}
-            <button id="refresh-btn" onclick="window._dashboardRefresh()"
-                    title="Fetch latest data now"
-                    class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
-                <svg id="refresh-icon" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Refresh
-            </button>
+            {{-- Raw data button --}}
+            <a href="{{ route('dashboard.raw') }}" target="_blank"
+               class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                Raw Data
+            </a>
+
 
             {{-- Device status --}}
             <div id="device-status" class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium
@@ -78,7 +79,7 @@
                 <strong>Water tank is empty.</strong> Pump is disabled until the tank is refilled.
             </div>
         @endif
-        @if($latest && $latest->temp < 4)
+        @if($latest && $latest->temp !== null && $latest->temp < 4)
             <div class="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl px-4 py-3 text-sm">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                 <strong>Frost warning!</strong> Temperature is {{ $latest->temp }}°C — protect your plants.
@@ -282,21 +283,45 @@
     {{-- Charts + Activity --}}
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
-        {{-- Sparkline chart --}}
-        <div class="xl:col-span-2 bg-gray-900 border border-gray-800 rounded-2xl p-5">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-sm font-semibold text-white">Sensor History</h2>
-                    <p class="text-xs text-gray-500 mt-0.5">Last 40 readings</p>
+        {{-- Sensor charts --}}
+        <div class="xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <h3 class="text-xs font-semibold text-white">Soil Moisture</h3>
+                    <span class="ml-auto text-xs text-gray-600">%</span>
                 </div>
-                <div class="flex gap-3 text-xs text-gray-500">
-                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Soil</span>
-                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Rain</span>
-                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500"></span>Temp</span>
-                    <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-500"></span>Humidity</span>
-                </div>
+                <canvas id="chart-soil" height="90"></canvas>
             </div>
-            <canvas id="sensor-chart" height="120"></canvas>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <h3 class="text-xs font-semibold text-white">Rain Intensity</h3>
+                    <span class="ml-auto text-xs text-gray-600">%</span>
+                </div>
+                <canvas id="chart-rain" height="90"></canvas>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                    <h3 class="text-xs font-semibold text-white">Temperature</h3>
+                    <span class="ml-auto text-xs text-gray-600">°C</span>
+                </div>
+                <canvas id="chart-temp" height="90"></canvas>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-4">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                    <h3 class="text-xs font-semibold text-white">Humidity</h3>
+                    <span class="ml-auto text-xs text-gray-600">%</span>
+                </div>
+                <canvas id="chart-humidity" height="90"></canvas>
+            </div>
+
         </div>
 
         {{-- Pump decisions --}}
@@ -395,66 +420,48 @@
     const latestUrl = el.dataset.latestUrl;
 
     // --- Chart setup ---
-    const ctx = document.getElementById('sensor-chart').getContext('2d');
-    const labels = readings.map(() => '');
+    function makeChart(id, color, data, { min, max, unit } = {}) {
+        const ctx = document.getElementById(id).getContext('2d');
+        const yOpts = {
+            display: true,
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#6b7280', font: { size: 10 }, callback: v => v + unit },
+            border: { display: false },
+        };
+        if (min !== undefined) { yOpts.min = min; }
+        if (max !== undefined) { yOpts.max = max; }
 
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [
-                {
-                    label: 'Soil %',
-                    data: readings.map(r => r.moisture_percent ?? Math.round((1 - r.moisture / 4095) * 100)),
-                    borderColor: '#f59e0b',
-                    backgroundColor: 'transparent',
+        return new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.map(() => ''),
+                datasets: [{
+                    data,
+                    borderColor: color,
+                    backgroundColor: color.replace(')', ', 0.08)').replace('rgb', 'rgba'),
+                    fill: true,
                     tension: 0.4,
                     pointRadius: 0,
                     borderWidth: 2,
-                },
-                {
-                    label: 'Rain %',
-                    data: readings.map(r => r.rain_percent ?? Math.round((1 - r.rain / 4095) * 100)),
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'transparent',
-                    tension: 0.4,
-                    pointRadius: 0,
-                    borderWidth: 2,
-                },
-                {
-                    label: 'Temp °C',
-                    data: readings.map(r => r.temp),
-                    borderColor: '#f97316',
-                    backgroundColor: 'transparent',
-                    tension: 0.4,
-                    pointRadius: 0,
-                    borderWidth: 2,
-                },
-                {
-                    label: 'Humidity %',
-                    data: readings.map(r => r.humidity),
-                    borderColor: '#06b6d4',
-                    backgroundColor: 'transparent',
-                    tension: 0.4,
-                    pointRadius: 0,
-                    borderWidth: 2,
-                },
-            ],
-        },
-        options: {
-            responsive: true,
-            animation: { duration: 400 },
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { display: false },
-                y: {
-                    display: true,
-                    grid: { color: 'rgba(255,255,255,0.04)' },
-                    ticks: { color: '#6b7280', font: { size: 11 } },
-                },
+                }],
             },
-        },
-    });
+            options: {
+                responsive: true,
+                animation: { duration: 400 },
+                plugins: { legend: { display: false }, tooltip: {
+                    callbacks: { label: ctx => ctx.parsed.y + unit }
+                }},
+                scales: { x: { display: false }, y: yOpts },
+            },
+        });
+    }
+
+    const charts = {
+        soil:     makeChart('chart-soil',     '#f59e0b', readings.map(r => r.moisture_percent ?? Math.round((1 - r.moisture / 4095) * 100)), { min: 0, max: 100, unit: '%' }),
+        rain:     makeChart('chart-rain',     '#3b82f6', readings.map(r => r.rain_percent ?? Math.round((1 - r.rain / 4095) * 100)),         { min: 0, max: 100, unit: '%' }),
+        temp:     makeChart('chart-temp',     '#f97316', readings.map(r => r.temp),                                                           { unit: '°C' }),
+        humidity: makeChart('chart-humidity', '#06b6d4', readings.map(r => r.humidity),                                                       { min: 0, max: 100, unit: '%' }),
+    };
 
     // --- Helpers ---
     function setText(id, val) {
@@ -481,7 +488,8 @@
     }
 
     // --- Timer / countdown state ---
-    let lastDataAt = Date.now(); // assume current on load
+    const latestReading = JSON.parse(el.dataset.latest || 'null');
+    let lastDataAt = latestReading?.created_at ? new Date(latestReading.created_at).getTime() : Date.now();
     let offlineSince = null;
     let pollTimer = null;
 
@@ -529,13 +537,16 @@
         const statusText = document.getElementById('device-status-text');
 
         if (overdue) {
-            if (!offlineSince) { offlineSince = Date.now(); }
+            if (!offlineSince) { offlineSince = lastDataAt + sendIntervalSecs * 1000; }
             const offlineSecs = Math.floor((Date.now() - offlineSince) / 1000);
+
             if (offlineAlert) {
                 offlineAlert.classList.remove('hidden');
                 offlineAlert.classList.add('flex');
                 const dur = document.getElementById('offline-duration');
-                if (dur) { dur.textContent = `offline for ${formatDuration(offlineSecs)}.`; }
+                if (dur) {
+                    dur.textContent = `no data for ${formatDuration(offlineSecs)}.`;
+                }
             }
             if (statusEl) { statusEl.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400'; }
             if (statusDot) { statusDot.className = 'w-1.5 h-1.5 rounded-full bg-red-500'; }
@@ -573,25 +584,6 @@
             schedulePoll();
         }
     }
-
-    window._dashboardRefresh = async function () {
-        const btn = document.getElementById('refresh-btn');
-        const icon = document.getElementById('refresh-icon');
-        if (btn) { btn.disabled = true; }
-        if (icon) { icon.classList.add('animate-spin'); }
-        try {
-            const res = await fetch(latestUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-            if (res.ok) {
-                const json = await res.json();
-                if (json.reading) {
-                    sendIntervalSecs = json.next_interval || sendIntervalSecs;
-                    applyReading(json.reading);
-                }
-            }
-        } catch (e) {}
-        if (btn) { btn.disabled = false; }
-        if (icon) { icon.classList.remove('animate-spin'); }
-    };
 
     schedulePoll();
 
@@ -671,7 +663,7 @@
                 </div>`;
             }
 
-            if (data.temp < 4) {
+            if (data.temp !== null && data.temp < 4) {
                 alertsHtml += `<div class="flex items-center gap-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl px-4 py-3 text-sm">
                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636-.707.707M21 12h-1M4 12H3m3.343-5.657-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                     <strong>Frost warning!</strong> Temperature is ${data.temp}°C — protect your plants.
@@ -684,16 +676,20 @@
             if (offlineAlert) { alertsEl.appendChild(offlineAlert); }
         }
 
-        // Chart update — keep last 40
+        // Charts update — keep last 40
         readings.push(data);
         if (readings.length > 40) { readings.shift(); }
 
-        chart.data.labels = readings.map(() => '');
-        chart.data.datasets[0].data = readings.map(r => r.moisture_percent ?? Math.round((1 - r.moisture / 4095) * 100));
-        chart.data.datasets[1].data = readings.map(r => r.rain_percent ?? Math.round((1 - r.rain / 4095) * 100));
-        chart.data.datasets[2].data = readings.map(r => r.temp);
-        chart.data.datasets[3].data = readings.map(r => r.humidity);
-        chart.update();
+        const emptyLabels = readings.map(() => '');
+        charts.soil.data.labels     = emptyLabels;
+        charts.rain.data.labels     = emptyLabels;
+        charts.temp.data.labels     = emptyLabels;
+        charts.humidity.data.labels = emptyLabels;
+        charts.soil.data.datasets[0].data     = readings.map(r => r.moisture_percent ?? Math.round((1 - r.moisture / 4095) * 100));
+        charts.rain.data.datasets[0].data     = readings.map(r => r.rain_percent ?? Math.round((1 - r.rain / 4095) * 100));
+        charts.temp.data.datasets[0].data     = readings.map(r => r.temp);
+        charts.humidity.data.datasets[0].data = readings.map(r => r.humidity);
+        Object.values(charts).forEach(c => c.update());
     }
 
     // --- Reverb live updates ---

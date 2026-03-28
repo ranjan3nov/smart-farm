@@ -66,7 +66,7 @@
                 @error('farm_name')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-300">Latitude</label>
                     <input name="latitude" type="number" step="0.0001" value="{{ old('latitude', config('farm.latitude')) }}"
@@ -131,6 +131,13 @@
                 <input name="ai_decision_interval" type="number" min="1" max="60" value="{{ old('ai_decision_interval', config('farm.ai_decision_interval_minutes')) }}"
                        class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
                 <p class="text-xs text-gray-500">How often the AI re-evaluates the pump. Default: 5 minutes.</p>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium text-gray-300">Send Interval <span class="text-gray-600 font-normal">(seconds)</span></label>
+                <input name="send_interval" type="number" min="10" max="3600" value="{{ old('send_interval', config('farm.send_interval_seconds')) }}"
+                       class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
+                <p class="text-xs text-gray-500">How often the device sends readings in normal mode. Alert mode always uses 20s. Default: 300s.</p>
             </div>
 
             {{-- API Contract --}}
