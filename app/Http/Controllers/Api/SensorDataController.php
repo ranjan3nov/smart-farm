@@ -6,6 +6,7 @@ use App\Events\SensorDataReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreSensorDataRequest;
 use App\Jobs\MakePumpDecision;
+use App\Models\FarmSetting;
 use App\Models\PumpSession;
 use App\Models\SensorReading;
 use Illuminate\Http\JsonResponse;
@@ -16,16 +17,16 @@ class SensorDataController extends Controller
     public function store(StoreSensorDataRequest $request): JsonResponse
     {
         $reading = SensorReading::create($request->validated());
+        $settings = FarmSetting::current();
 
         // Track last-seen for offline detection
         Cache::put('device_last_seen', now()->timestamp, now()->addMinutes(5));
 
         // Dispatch AI decision job at most once per configured interval
-        $intervalMinutes = (int) config('farm.ai_decision_interval_minutes', 5);
         $throttleKey = 'ai_decision_throttle';
 
         if (! Cache::has($throttleKey)) {
-            Cache::put($throttleKey, true, now()->addMinutes($intervalMinutes));
+            Cache::put($throttleKey, true, now()->addMinutes($settings->ai_decision_interval_minutes));
             MakePumpDecision::dispatch($reading);
         }
 
@@ -56,13 +57,12 @@ class SensorDataController extends Controller
 
         // Tell the device how long to wait before the next send.
         // Alert mode (20s): pump is running, soil is dry, or tank is empty.
-        // Normal mode (300s): everything is fine — no need to hammer the server.
-        $threshold = (int) config('farm.moisture_threshold', 30);
+        // Normal mode: use configured send interval.
         $isAlertState = $pumpCommand === 'ON'
             || $reading->tank_status === 'EMPTY'
-            || $reading->moisture_percent < $threshold;
+            || $reading->moisture_percent < $settings->moisture_threshold;
 
-        $nextInterval = $isAlertState ? 20 : (int) config('farm.send_interval_seconds', 300);
+        $nextInterval = $isAlertState ? 20 : $settings->send_interval_seconds;
 
         // Store so dashboard can show the correct countdown
         Cache::put('device_next_interval', $nextInterval, now()->addHours(1));

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FarmSetting;
 use App\Models\PumpSession;
 use App\Models\SensorReading;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $plantStartedAt = $user->plant_started_at;
+        $settings = FarmSetting::current();
 
         $readingQuery = SensorReading::latest();
         if ($plantStartedAt) {
@@ -69,9 +71,8 @@ class DashboardController extends Controller
         $nextIrrigationEstimate = null;
 
         if ($lastSession) {
-            $threshold = (int) config('farm.moisture_threshold', 30);
             $dryReading = SensorReading::where('created_at', '>', $lastSession->pump_off_at)
-                ->whereRaw('ROUND((1 - moisture / 4095) * 100) <= ?', [$threshold])
+                ->whereRaw('ROUND((1 - moisture / 4095) * 100) <= ?', [$settings->moisture_threshold])
                 ->oldest()
                 ->first();
 
@@ -86,7 +87,7 @@ class DashboardController extends Controller
             'recentReadings' => $recentReadings,
             'activityLog' => $activityLog,
             'lastSeen' => $lastSeen,
-            'farmName' => config('farm.name'),
+            'farmName' => $settings->name,
             'plantName' => $user->plant_name,
             'plantStartedAt' => $plantStartedAt,
             'pumpSessions' => $pumpSessions,

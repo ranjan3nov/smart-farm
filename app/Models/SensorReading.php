@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\FarmSetting;
 use Database\Factories\SensorReadingFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -58,7 +59,7 @@ class SensorReading extends Model
     /** Tank fill percentage based on a configurable max distance. */
     public function getTankFillPercentAttribute(): int
     {
-        $maxDistance = (float) (config('farm.tank_height_cm', 200));
+        $maxDistance = (float) FarmSetting::current()->tank_height_cm;
 
         if ($this->water_dist <= 0 || $this->water_dist > $maxDistance) {
             return 0;

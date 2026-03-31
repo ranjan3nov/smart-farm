@@ -2,6 +2,7 @@
 
 namespace App\Services\Ai;
 
+use App\Models\FarmSetting;
 use App\Models\SensorReading;
 use App\Models\User;
 use App\Services\Weather\OpenMeteoClient;
@@ -20,18 +21,18 @@ class AiDecisionService
      */
     public function decide(SensorReading $reading): void
     {
-        if (! config('farm.ai.endpoint')) {
+        $settings = FarmSetting::current();
+
+        if (! $settings->ai_endpoint) {
             Log::info('AI decision skipped — no endpoint configured.');
 
             return;
         }
 
         $weatherData = null;
-        $lat = config('farm.latitude');
-        $lng = config('farm.longitude');
 
-        if ($lat && $lng) {
-            $weatherData = $this->weather->getForecast((float) $lat, (float) $lng);
+        if ($settings->latitude && $settings->longitude) {
+            $weatherData = $this->weather->getForecast($settings->latitude, $settings->longitude);
         }
 
         $lastCommand = Cache::get('pump_command', 'OFF');
@@ -54,7 +55,8 @@ class AiDecisionService
                 'plant_name' => $plantName,
                 'last_pump_command' => $lastCommand,
                 'last_pump_command_at' => $lastCommandAt,
-                'moisture_threshold' => config('farm.moisture_threshold', 30),
+                'moisture_threshold' => $settings->moisture_threshold,
+                'moisture_max' => $settings->moisture_max,
             ],
         ];
 
