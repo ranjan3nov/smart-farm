@@ -92,6 +92,13 @@
     </div>
 
     {{-- Metric cards --}}
+    <div>
+    <div class="flex items-center justify-between mb-3">
+        <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Sensor Readings</span>
+        <span id="last-updated-label" class="text-xs text-gray-600">
+            @if($latest) Updated {{ $latest->created_at->diffForHumans() }} @else No data @endif
+        </span>
+    </div>
     <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
 
         {{-- Soil Moisture --}}
@@ -213,6 +220,7 @@
             </div>
         </div>
 
+    </div>
     </div>
 
     {{-- Trend stats row --}}
@@ -495,14 +503,28 @@
 
     function formatDuration(secs) {
         if (secs < 60) return `${secs}s`;
-        const m = Math.floor(secs / 60);
-        const s = secs % 60;
-        return `${m}m ${s}s`;
+        if (secs < 3600) {
+            const m = Math.floor(secs / 60);
+            const s = secs % 60;
+            return s > 0 ? `${m}m ${s}s` : `${m}m`;
+        }
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        if (secs < 86400) return m > 0 ? `${h}h ${m}m` : `${h}h`;
+        const d = Math.floor(secs / 86400);
+        const rh = Math.floor((secs % 86400) / 3600);
+        return rh > 0 ? `${d}d ${rh}h` : `${d}d`;
     }
 
     function tickTimer() {
         const elapsed = Math.floor((Date.now() - lastDataAt) / 1000);
         const remaining = Math.max(0, sendIntervalSecs - elapsed);
+
+        // Last updated label
+        const lastUpdatedEl = document.getElementById('last-updated-label');
+        if (lastUpdatedEl && lastDataAt) {
+            lastUpdatedEl.textContent = elapsed < 5 ? 'Updated just now' : `Updated ${formatDuration(elapsed)} ago`;
+        }
 
         // Countdown text
         const timerText = document.getElementById('update-timer-text');
@@ -698,4 +720,5 @@
     });
 })();
 </script>
+
 @endpush

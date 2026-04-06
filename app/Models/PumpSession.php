@@ -23,8 +23,13 @@ class PumpSession extends Model
             return 'Running...';
         }
 
-        $minutes = intdiv($this->duration_seconds, 60);
+        $hours = intdiv($this->duration_seconds, 3600);
+        $minutes = intdiv($this->duration_seconds % 3600, 60);
         $seconds = $this->duration_seconds % 60;
+
+        if ($hours > 0) {
+            return $minutes > 0 ? "{$hours}h {$minutes}m" : "{$hours}h";
+        }
 
         return $minutes > 0 ? "{$minutes}m {$seconds}s" : "{$seconds}s";
     }
