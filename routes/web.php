@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PumpOverrideController;
 use App\Http\Controllers\SettingsController;
 use App\Models\AiTestRun;
+use App\Models\FarmSetting;
 use App\Models\SensorReading;
 use Illuminate\Support\Facades\Route;
 
@@ -26,8 +27,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/ai-tester', fn () => view('ai-tester', [
         'latest' => SensorReading::latest()->first(),
         'pastRuns' => AiTestRun::latestPerScenario(),
+        'settings' => FarmSetting::current(),
     ]))->name('ai-tester');
     Route::post('/ai-tester/runs', [AiTestRunController::class, 'store'])->name('ai-tester.runs.store');
+    Route::patch('/ai-tester/endpoint', [AiTestRunController::class, 'updateEndpoint'])->name('ai-tester.endpoint.update');
 
     Route::get('/settings', [SettingsController::class, 'show'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');

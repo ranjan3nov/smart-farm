@@ -6,6 +6,8 @@
      data-latest="{{ $latest ? $latest->toJson() : 'null' }}"
      data-latest-url="{{ route('dashboard.latest') }}"
      data-store-url="{{ route('ai-tester.runs.store') }}"
+     data-endpoint-url="{{ route('ai-tester.endpoint.update') }}"
+     data-ai-endpoint="{{ $settings->ai_endpoint }}"
      data-past-runs="{{ $pastRuns->toJson() }}"
 >
 
@@ -20,7 +22,7 @@
         <h2 class="text-sm font-semibold text-white mb-3">Endpoint</h2>
         <div class="flex gap-2">
             <span class="flex items-center px-3 bg-gray-800 border border-gray-700 border-r-0 rounded-l-xl text-xs font-mono text-gray-500">POST</span>
-            <input id="ai-url" type="url" placeholder="https://your-ai-endpoint.com/predict"
+            <input id="ai-url" type="url" placeholder="https://irrigation-yhzh.onrender.com/api/v1/irrigate"
                    class="flex-1 bg-gray-800 border border-gray-700 rounded-r-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 transition-colors font-mono">
         </div>
         <div id="ai-url-error" class="hidden mt-2 text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2"></div>
@@ -492,19 +494,35 @@
     const el = document.getElementById('ai-tester');
     let currentReading = JSON.parse(el.dataset.latest || 'null');
 
-    const URL_STORAGE_KEY    = 'ai_tester_url';
     const COLD_START_WARN_MS = 6000;
     const REQUEST_TIMEOUT_MS = 90000;
 
-    const storeUrl = el.dataset.storeUrl;
-    const pastRuns = JSON.parse(el.dataset.pastRuns || '{}'); // keyed by scenario_key
+    const storeUrl    = el.dataset.storeUrl;
+    const endpointUrl = el.dataset.endpointUrl;
+    const pastRuns    = JSON.parse(el.dataset.pastRuns || '{}');
 
-    // ── URL persistence (localStorage is fine for a URL) ────────────────────
+    // ── URL — pre-fill from DB, debounce-save on change ─────────────────────
     const urlInput = document.getElementById('ai-url');
-    const savedUrl = localStorage.getItem(URL_STORAGE_KEY);
-    if (savedUrl) { urlInput.value = savedUrl; }
+    if (el.dataset.aiEndpoint) { urlInput.value = el.dataset.aiEndpoint; }
+
+    let urlSaveTimer = null;
     urlInput.addEventListener('input', () => {
-        localStorage.setItem(URL_STORAGE_KEY, urlInput.value.trim());
+        clearTimeout(urlSaveTimer);
+        urlSaveTimer = setTimeout(async () => {
+            const url = urlInput.value.trim();
+            if (!url) { return; }
+            try {
+                await fetch(endpointUrl, {
+                    method:  'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept':       'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: JSON.stringify({ url }),
+                });
+            } catch {}
+        }, 800);
     });
 
     // ── Save result to server ────────────────────────────────────────────────
