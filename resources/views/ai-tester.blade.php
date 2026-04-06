@@ -48,43 +48,65 @@
                         </button>
                     </div>
                 </div>
-                <pre id="ai-payload" class="bg-gray-950 border border-gray-800 rounded-xl p-4 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre leading-relaxed max-h-80"></pre>
+                <textarea id="ai-payload" rows="18" spellcheck="false"
+                          class="bg-gray-950 border border-gray-800 rounded-xl p-4 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre leading-relaxed resize-none w-full focus:outline-none focus:border-gray-700 transition-colors"></textarea>
                 <button id="ai-send-btn" type="button"
                         class="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                    Test with Live Data
+                    Send Request
                 </button>
                 <div id="ai-error" class="hidden text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2"></div>
             </div>
 
             {{-- Sensor summary --}}
             <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-                <h2 class="text-sm font-semibold text-white mb-3">Current Reading</h2>
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-sm font-semibold text-white">Current Reading</h2>
+                    <button id="r-reset" type="button" class="hidden text-xs text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Reset
+                    </button>
+                </div>
                 <div id="reading-summary" class="grid grid-cols-2 gap-2 text-xs">
-                    <div class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between">
-                        <span class="text-gray-500">Moisture</span>
-                        <span id="r-moisture" class="text-white font-mono">—</span>
-                    </div>
-                    <div class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between">
-                        <span class="text-gray-500">Rain</span>
-                        <span id="r-rain" class="text-white font-mono">—</span>
-                    </div>
-                    <div class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between">
-                        <span class="text-gray-500">Temperature</span>
-                        <span id="r-temp" class="text-white font-mono">—</span>
-                    </div>
-                    <div class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between">
-                        <span class="text-gray-500">Humidity</span>
-                        <span id="r-humidity" class="text-white font-mono">—</span>
-                    </div>
-                    <div class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between">
-                        <span class="text-gray-500">Tank</span>
-                        <span id="r-tank" class="text-white font-mono">—</span>
-                    </div>
-                    <div class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between">
-                        <span class="text-gray-500">Pump</span>
-                        <span id="r-pump" class="text-white font-mono">—</span>
-                    </div>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Moisture %</span>
+                        <input id="r-moisture" type="number" min="0" max="100" placeholder="—"
+                               class="r-input w-16 text-right bg-transparent text-white font-mono focus:outline-none placeholder-gray-600">
+                    </label>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Rain %</span>
+                        <input id="r-rain" type="number" min="0" max="100" placeholder="—"
+                               class="r-input w-16 text-right bg-transparent text-white font-mono focus:outline-none placeholder-gray-600">
+                    </label>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Temp °C</span>
+                        <input id="r-temp" type="number" step="0.1" placeholder="—"
+                               class="r-input w-16 text-right bg-transparent text-white font-mono focus:outline-none placeholder-gray-600">
+                    </label>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Humidity %</span>
+                        <input id="r-humidity" type="number" min="0" max="100" placeholder="—"
+                               class="r-input w-16 text-right bg-transparent text-white font-mono focus:outline-none placeholder-gray-600">
+                    </label>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Tank %</span>
+                        <input id="r-tank" type="number" min="0" max="100" placeholder="—"
+                               class="r-input w-16 text-right bg-transparent text-white font-mono focus:outline-none placeholder-gray-600">
+                    </label>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Tank Status</span>
+                        <select id="r-tank-status" class="r-input bg-transparent text-white font-mono text-xs focus:outline-none text-right">
+                            <option value="OK" class="bg-gray-900">OK</option>
+                            <option value="EMPTY" class="bg-gray-900">EMPTY</option>
+                        </select>
+                    </label>
+                    <label class="bg-gray-950 rounded-lg px-3 py-2 flex justify-between items-center gap-2">
+                        <span class="text-gray-500 shrink-0">Pump</span>
+                        <select id="r-pump" class="r-input bg-transparent text-white font-mono text-xs focus:outline-none text-right">
+                            <option value="OFF" class="bg-gray-900">OFF</option>
+                            <option value="ON" class="bg-gray-900">ON</option>
+                        </select>
+                    </label>
                 </div>
                 <div class="mt-2 text-xs text-gray-600" id="r-timestamp"></div>
             </div>
@@ -128,6 +150,30 @@
         <div class="flex flex-col gap-4" id="sample-payload-list">
 
             @php
+            /**
+             * Renders a payload as pretty JSON with a // +Nh °C comment
+             * appended to each value in the temp_next_6h array.
+             */
+            function annotatedPayload(array $payload): string {
+                $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                // Replace the compact temp_next_6h line with an annotated block
+                $json = preg_replace_callback(
+                    '/"temp_next_6h": \[([^\]]+)\]/s',
+                    function ($m) {
+                        $values = array_map('trim', explode(',', trim($m[1])));
+                        $lines  = [];
+                        foreach ($values as $i => $val) {
+                            $hour    = $i + 1;
+                            $comma   = $i < count($values) - 1 ? ',' : '';
+                            $lines[] = "      {$val}{$comma}  // +{$hour}h °C";
+                        }
+                        return '"temp_next_6h": [' . "\n" . implode("\n", $lines) . "\n    ]";
+                    },
+                    $json
+                );
+                return $json;
+            }
+
             $samples = [
                 [
                     'title' => 'Sunny + Bone-Dry + Heavy Rain in 1h',
@@ -406,12 +452,12 @@
                 </div>
 
                 {{-- Payload + Response side by side --}}
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-3">
 
                     {{-- Payload --}}
                     <div class="flex flex-col gap-1.5">
                         <span class="text-xs text-gray-500 font-medium">Request</span>
-                        <pre class="bg-gray-950 border border-gray-800 rounded-xl p-4 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre leading-relaxed h-full">{{ json_encode($sample['payload'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                        <pre class="bg-gray-950 border border-gray-800 rounded-xl p-4 text-xs text-gray-300 font-mono overflow-x-auto whitespace-pre leading-relaxed h-full">{{ annotatedPayload($sample['payload']) }}</pre>
                     </div>
 
                     {{-- Response --}}
@@ -444,6 +490,19 @@
     const el = document.getElementById('ai-tester');
     let currentReading = JSON.parse(el.dataset.latest || 'null');
 
+    const URL_STORAGE_KEY    = 'ai_tester_url';
+    const RESULT_PREFIX      = 'ai_sample_result_';
+    const COLD_START_WARN_MS = 6000;   // show waking-up hint after 6s
+    const REQUEST_TIMEOUT_MS = 90000;  // 90s for Render cold starts
+
+    // ── URL persistence ──────────────────────────────────────────────────────
+    const urlInput = document.getElementById('ai-url');
+    const savedUrl = localStorage.getItem(URL_STORAGE_KEY);
+    if (savedUrl) { urlInput.value = savedUrl; }
+    urlInput.addEventListener('input', () => {
+        localStorage.setItem(URL_STORAGE_KEY, urlInput.value.trim());
+    });
+
     // ── Payload builder (matches AI API contract) ────────────────────────────
     function buildLivePayload(r) {
         if (!r) { return null; }
@@ -469,47 +528,125 @@
         };
     }
 
-    // ── Render live payload preview ──────────────────────────────────────────
-    function refreshLivePreview() {
-        const r = currentReading;
-        const payload = buildLivePayload(r);
-
-        document.getElementById('ai-payload').textContent = payload
-            ? JSON.stringify(payload, null, 2)
-            : '// No sensor data yet — connect your device';
-
-        if (r) {
-            document.getElementById('r-moisture').textContent = r.moisture_percent != null ? r.moisture_percent + '%' : '—';
-            document.getElementById('r-rain').textContent     = r.rain_percent      != null ? r.rain_percent      + '%' : '—';
-            document.getElementById('r-temp').textContent     = r.temp              != null ? r.temp              + '°C': '—';
-            document.getElementById('r-humidity').textContent = r.humidity          != null ? r.humidity          + '%' : '—';
-            document.getElementById('r-tank').textContent     = r.tank_status === 'EMPTY' ? 'Empty' : (r.tank_fill_percent != null ? r.tank_fill_percent + '%' : '—');
-            document.getElementById('r-pump').textContent     = r.pump_command ?? '—';
-            const ts = r.created_at ? new Date(r.created_at) : null;
-            document.getElementById('r-timestamp').textContent = ts ? 'Recorded ' + ts.toLocaleTimeString() : '';
-        }
+    // ── Reading inputs → payload ─────────────────────────────────────────────
+    function soilStatus(pct) {
+        if (pct >= 70) { return 'Well watered'; }
+        if (pct >= 40) { return 'Slightly dry'; }
+        if (pct >= 20) { return 'Dry — needs water'; }
+        return 'Very dry';
+    }
+    function rainStatus(pct) {
+        if (pct >= 70) { return 'Heavy rain'; }
+        if (pct >= 30) { return 'Light rain'; }
+        return 'No rain';
     }
 
-    refreshLivePreview();
+    function readingFromInputs() {
+        const n = (id) => { const v = document.getElementById(id).value; return v === '' ? null : Number(v); };
+        const s = (id) => document.getElementById(id).value || null;
+        const moisture = n('r-moisture');
+        const rain     = n('r-rain');
+        return {
+            moisture_percent:  moisture,
+            soil_status:       moisture != null ? soilStatus(moisture) : null,
+            rain_percent:      rain,
+            rain_status:       rain     != null ? rainStatus(rain)     : null,
+            temp:              n('r-temp'),
+            humidity:          n('r-humidity'),
+            tank_fill_percent: n('r-tank'),
+            tank_status:       s('r-tank-status'),
+            pump_command:      s('r-pump'),
+            created_at:        currentReading?.created_at ?? null,
+        };
+    }
+
+    function rebuildPayload() {
+        const r = readingFromInputs();
+        document.getElementById('ai-payload').value = JSON.stringify(buildLivePayload(r), null, 2);
+    }
+
+    // ── Populate inputs from a reading object ────────────────────────────────
+    function populateInputs(r) {
+        const set = (id, val) => { if (val != null) { document.getElementById(id).value = val; } };
+        set('r-moisture',    r?.moisture_percent);
+        set('r-rain',        r?.rain_percent);
+        set('r-temp',        r?.temp);
+        set('r-humidity',    r?.humidity);
+        set('r-tank',        r?.tank_fill_percent);
+        if (r?.tank_status)  { document.getElementById('r-tank-status').value = r.tank_status; }
+        if (r?.pump_command) { document.getElementById('r-pump').value = r.pump_command; }
+        const ts = r?.created_at ? new Date(r.created_at) : null;
+        document.getElementById('r-timestamp').textContent = ts ? 'Recorded ' + ts.toLocaleTimeString() : '';
+    }
+
+    // ── Wire inputs to rebuild payload ───────────────────────────────────────
+    let userEdited = false;
+    document.querySelectorAll('.r-input').forEach((input) => {
+        input.addEventListener('input', () => {
+            userEdited = true;
+            document.getElementById('r-reset').classList.remove('hidden');
+            rebuildPayload();
+        });
+    });
+
+    document.getElementById('r-reset').addEventListener('click', () => {
+        userEdited = false;
+        document.getElementById('r-reset').classList.add('hidden');
+        populateInputs(currentReading);
+        rebuildPayload();
+    });
+
+    // ── Initial render ───────────────────────────────────────────────────────
+    populateInputs(currentReading);
+    rebuildPayload();
 
     window.Echo?.channel('farm').listen('SensorDataReceived', (data) => {
         currentReading = data;
-        refreshLivePreview();
+        if (!userEdited) {
+            populateInputs(currentReading);
+            rebuildPayload();
+        }
     });
 
-    // ── Shared HTTP helper ───────────────────────────────────────────────────
-    async function sendRequest(url, payload) {
+    // ── Shared HTTP helper with timeout + cold-start ticker ──────────────────
+    async function sendRequest(url, payload, onTick) {
+        const ctrl  = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+
+        // ticker: fires every second so callers can update the waiting label
+        let elapsed = 0;
+        const ticker = setInterval(() => { elapsed += 1000; onTick?.(elapsed); }, 1000);
+
         const start = Date.now();
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-        const elapsed = Date.now() - start;
-        const text = await res.text();
-        let display = text;
-        try { display = JSON.stringify(JSON.parse(text), null, 2); } catch {}
-        return { ok: res.ok, status: res.status, statusText: res.statusText, elapsed, display };
+        try {
+            const res  = await fetch(url, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body:    JSON.stringify(payload),
+                signal:  ctrl.signal,
+            });
+            const ms   = Date.now() - start;
+            const text = await res.text();
+            let display = text;
+            try { display = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+
+            // Try to surface schema hints on 422
+            let hint = null;
+            if (res.status === 422) {
+                try {
+                    const parsed = JSON.parse(text);
+                    const docsUrl = new URL('/docs', url).href;
+                    hint = `Schema mismatch — check the API docs at ${docsUrl}\n\nValidation detail:\n` +
+                           JSON.stringify(parsed?.detail ?? parsed, null, 2);
+                    display = hint;
+                } catch {}
+            }
+
+            return { ok: res.ok, status: res.status, statusText: res.statusText, elapsed: ms, display };
+        } finally {
+            clearTimeout(timer);
+            clearInterval(ticker);
+        }
     }
 
     function getUrl() {
@@ -526,11 +663,19 @@
         document.getElementById('ai-url-error').classList.add('hidden');
     }
 
+    const spinnerSvg = `<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
+    const sendSvg    = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`;
+
+    function sendingLabel(ms) {
+        if (ms < COLD_START_WARN_MS) { return `${spinnerSvg} Sending…`; }
+        return `${spinnerSvg} Waiting… ${Math.round(ms / 1000)}s <span class="opacity-60 font-normal text-xs">(server waking up)</span>`;
+    }
+
     // ── Copy live payload ────────────────────────────────────────────────────
     document.getElementById('ai-copy-payload').addEventListener('click', () => {
-        const payload = buildLivePayload(currentReading);
-        if (!payload) { return; }
-        navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+        const text = document.getElementById('ai-payload').value.trim();
+        if (!text) { return; }
+        navigator.clipboard.writeText(text);
         const btn = document.getElementById('ai-copy-payload');
         btn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Copied`;
         setTimeout(() => {
@@ -542,26 +687,30 @@
     document.getElementById('ai-send-btn').addEventListener('click', async () => {
         const url = getUrl();
         const btn = document.getElementById('ai-send-btn');
-        const errorEl = document.getElementById('ai-error');
+        const errorEl  = document.getElementById('ai-error');
         const statusBar = document.getElementById('ai-response-status-bar');
         const emptyState = document.getElementById('ai-response-empty');
-        const payload = buildLivePayload(currentReading);
-
         clearUrlError();
         errorEl.classList.add('hidden');
 
         if (!url) { showUrlError('Enter an endpoint URL first.'); return; }
-        if (!payload) {
-            errorEl.textContent = 'No sensor data available to send.';
+
+        let payload;
+        try {
+            payload = JSON.parse(document.getElementById('ai-payload').value);
+        } catch {
+            errorEl.textContent = 'Invalid JSON in payload — fix it before sending.';
             errorEl.classList.remove('hidden');
             return;
         }
 
         btn.disabled = true;
-        btn.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Sending...`;
+        btn.innerHTML = sendingLabel(0);
 
         try {
-            const r = await sendRequest(url, payload);
+            const r = await sendRequest(url, payload, (ms) => {
+                btn.innerHTML = sendingLabel(ms);
+            });
             const statusEl = document.getElementById('ai-response-status');
             statusEl.textContent = `${r.status} ${r.statusText}`;
             statusEl.className = 'text-xs font-mono px-2 py-0.5 rounded-md ' + (r.ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400');
@@ -570,17 +719,16 @@
             statusBar.classList.remove('hidden');
             emptyState.classList.add('hidden');
         } catch (err) {
-            errorEl.textContent = `Request failed: ${err.message}`;
+            const msg = err.name === 'AbortError' ? 'Request timed out after 90s — server may still be starting.' : `Request failed: ${err.message}`;
+            errorEl.textContent = msg;
             errorEl.classList.remove('hidden');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Test with Live Data`;
+            btn.innerHTML = `${sendSvg} Test with Live Data`;
         }
     });
 
     // ── Sample payload cards ─────────────────────────────────────────────────
-    const STORAGE_PREFIX = 'ai_sample_result_';
-
     function renderSampleResult(card, result) {
         const status   = card.querySelector('.sample-status');
         const latency  = card.querySelector('.sample-latency');
@@ -590,7 +738,7 @@
 
         status.textContent = `${result.status} ${result.statusText}`;
         status.className = 'sample-status text-xs font-mono px-2 py-0.5 rounded-md ' + (result.ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400');
-        latency.textContent = `${result.elapsed}ms`;
+        latency.textContent = result.elapsed ? `${result.elapsed}ms` : '';
         testedAt.textContent = result.tested_at ? 'Last tested ' + new Date(result.tested_at).toLocaleTimeString() : '';
         body.textContent = result.display || '(empty response)';
         empty.classList.add('hidden');
@@ -599,11 +747,8 @@
 
     // Restore stored results on load
     document.querySelectorAll('.sample-card').forEach((card) => {
-        const key = card.dataset.key;
-        const stored = localStorage.getItem(STORAGE_PREFIX + key);
-        if (stored) {
-            try { renderSampleResult(card, JSON.parse(stored)); } catch {}
-        }
+        const stored = localStorage.getItem(RESULT_PREFIX + card.dataset.key);
+        if (stored) { try { renderSampleResult(card, JSON.parse(stored)); } catch {} }
     });
 
     // Test buttons
@@ -615,25 +760,35 @@
         clearUrlError();
         if (!url) { showUrlError('Enter an endpoint URL above first.'); return; }
 
-        const card = btn.closest('.sample-card');
-        const key = card.dataset.key;
+        const card    = btn.closest('.sample-card');
+        const key     = card.dataset.key;
         const payload = JSON.parse(btn.dataset.payload);
+        const iconEl  = btn.querySelector('.btn-icon');
+        const labelEl = btn.querySelector('.btn-label');
+
+        const spinIcon = `<svg class="w-3.5 h-3.5 btn-icon animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
+        const sendIcon = `<svg class="w-3.5 h-3.5 btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`;
 
         btn.disabled = true;
-        btn.querySelector('.btn-icon').outerHTML = `<svg class="w-3.5 h-3.5 btn-icon animate-spin" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>`;
-        btn.querySelector('.btn-label').textContent = 'Sending…';
+        iconEl.outerHTML = spinIcon;
+        labelEl.textContent = 'Sending…';
 
         try {
-            const result = await sendRequest(url, payload);
+            const result = await sendRequest(url, payload, (ms) => {
+                card.querySelector('.btn-label').textContent = ms < COLD_START_WARN_MS
+                    ? 'Sending…'
+                    : `${Math.round(ms / 1000)}s…`;
+            });
             result.tested_at = new Date().toISOString();
-            localStorage.setItem(STORAGE_PREFIX + key, JSON.stringify(result));
+            localStorage.setItem(RESULT_PREFIX + key, JSON.stringify(result));
             renderSampleResult(card, result);
         } catch (err) {
-            renderSampleResult(card, { ok: false, status: 'Error', statusText: '', elapsed: 0, display: err.message, tested_at: new Date().toISOString() });
+            const msg = err.name === 'AbortError' ? 'Timed out after 90s' : err.message;
+            renderSampleResult(card, { ok: false, status: 'Error', statusText: '', elapsed: 0, display: msg, tested_at: new Date().toISOString() });
         } finally {
             btn.disabled = false;
-            btn.querySelector('.btn-icon').outerHTML = `<svg class="w-3.5 h-3.5 btn-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`;
-            btn.querySelector('.btn-label').textContent = 'Test';
+            card.querySelector('.btn-icon').outerHTML = sendIcon;
+            card.querySelector('.btn-label').textContent = 'Test';
         }
     });
 })();
