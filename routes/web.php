@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AiTestRunController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PumpOverrideController;
 use App\Http\Controllers\SettingsController;
+use App\Models\AiTestRun;
 use App\Models\SensorReading;
 use Illuminate\Support\Facades\Route;
 
@@ -21,7 +23,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/latest', [DashboardController::class, 'latest'])->name('dashboard.latest');
     Route::get('/dashboard/raw', [DashboardController::class, 'rawData'])->name('dashboard.raw');
     Route::get('/docs', fn () => view('docs'))->name('docs');
-    Route::get('/ai-tester', fn () => view('ai-tester', ['latest' => SensorReading::latest()->first()]))->name('ai-tester');
+    Route::get('/ai-tester', fn () => view('ai-tester', [
+        'latest' => SensorReading::latest()->first(),
+        'pastRuns' => AiTestRun::latestPerScenario(),
+    ]))->name('ai-tester');
+    Route::post('/ai-tester/runs', [AiTestRunController::class, 'store'])->name('ai-tester.runs.store');
 
     Route::get('/settings', [SettingsController::class, 'show'])->name('settings');
     Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');

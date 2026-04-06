@@ -5,6 +5,8 @@
 <div class="p-6 flex flex-col gap-6" id="ai-tester"
      data-latest="{{ $latest ? $latest->toJson() : 'null' }}"
      data-latest-url="{{ route('dashboard.latest') }}"
+     data-store-url="{{ route('ai-tester.runs.store') }}"
+     data-past-runs="{{ $pastRuns->toJson() }}"
 >
 
     {{-- Header --}}
@@ -491,17 +493,44 @@
     let currentReading = JSON.parse(el.dataset.latest || 'null');
 
     const URL_STORAGE_KEY    = 'ai_tester_url';
-    const RESULT_PREFIX      = 'ai_sample_result_';
-    const COLD_START_WARN_MS = 6000;   // show waking-up hint after 6s
-    const REQUEST_TIMEOUT_MS = 90000;  // 90s for Render cold starts
+    const COLD_START_WARN_MS = 6000;
+    const REQUEST_TIMEOUT_MS = 90000;
 
-    // ── URL persistence ──────────────────────────────────────────────────────
+    const storeUrl = el.dataset.storeUrl;
+    const pastRuns = JSON.parse(el.dataset.pastRuns || '{}'); // keyed by scenario_key
+
+    // ── URL persistence (localStorage is fine for a URL) ────────────────────
     const urlInput = document.getElementById('ai-url');
     const savedUrl = localStorage.getItem(URL_STORAGE_KEY);
     if (savedUrl) { urlInput.value = savedUrl; }
     urlInput.addEventListener('input', () => {
         localStorage.setItem(URL_STORAGE_KEY, urlInput.value.trim());
     });
+
+    // ── Save result to server ────────────────────────────────────────────────
+    async function saveRun(scenarioKey, scenarioTitle, payload, result) {
+        try {
+            await fetch(storeUrl, {
+                method:  'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept':       'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({
+                    scenario_key:   scenarioKey,
+                    scenario_title: scenarioTitle,
+                    payload,
+                    response_body:  result.display   ?? null,
+                    status_code:    result.status     ?? null,
+                    latency_ms:     result.elapsed    ?? null,
+                    ok:             result.ok         ?? false,
+                }),
+            });
+        } catch {
+            // non-critical — silently ignore save failures
+        }
+    }
 
     // ── Payload builder (matches AI API contract) ────────────────────────────
     function buildLivePayload(r) {
@@ -745,10 +774,19 @@
         body.classList.remove('hidden');
     }
 
-    // Restore stored results on load
+    // Restore results from server on load
     document.querySelectorAll('.sample-card').forEach((card) => {
-        const stored = localStorage.getItem(RESULT_PREFIX + card.dataset.key);
-        if (stored) { try { renderSampleResult(card, JSON.parse(stored)); } catch {} }
+        const run = pastRuns[card.dataset.key];
+        if (run) {
+            renderSampleResult(card, {
+                ok:         run.ok,
+                status:     run.status_code,
+                statusText: '',
+                elapsed:    run.latency_ms,
+                display:    run.response_body,
+                tested_at:  run.created_at,
+            });
+        }
     });
 
     // Test buttons
@@ -774,14 +812,15 @@
         labelEl.textContent = 'Sending…';
 
         try {
+            const title  = card.querySelector('h3').textContent.trim();
             const result = await sendRequest(url, payload, (ms) => {
                 card.querySelector('.btn-label').textContent = ms < COLD_START_WARN_MS
                     ? 'Sending…'
                     : `${Math.round(ms / 1000)}s…`;
             });
             result.tested_at = new Date().toISOString();
-            localStorage.setItem(RESULT_PREFIX + key, JSON.stringify(result));
             renderSampleResult(card, result);
+            saveRun(key, title, payload, result);
         } catch (err) {
             const msg = err.name === 'AbortError' ? 'Timed out after 90s' : err.message;
             renderSampleResult(card, { ok: false, status: 'Error', statusText: '', elapsed: 0, display: msg, tested_at: new Date().toISOString() });
