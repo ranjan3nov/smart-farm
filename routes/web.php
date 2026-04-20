@@ -25,11 +25,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard/raw', [DashboardController::class, 'rawData'])->name('dashboard.raw');
     Route::get('/docs', fn () => view('docs'))->name('docs');
     Route::get('/ai-tester', fn () => view('ai-tester', [
-        'latest' => SensorReading::latest()->first(),
+        'latest'   => SensorReading::latest()->first(),
         'pastRuns' => AiTestRun::latestPerScenario(),
         'settings' => FarmSetting::current(),
     ]))->name('ai-tester');
     Route::post('/ai-tester/runs', [AiTestRunController::class, 'store'])->name('ai-tester.runs.store');
+    Route::post('/ai-tester/proxy', [AiTestRunController::class, 'proxy'])->name('ai-tester.proxy');
     Route::patch('/ai-tester/endpoint', [AiTestRunController::class, 'updateEndpoint'])->name('ai-tester.endpoint.update');
 
     Route::get('/settings', [SettingsController::class, 'show'])->name('settings');

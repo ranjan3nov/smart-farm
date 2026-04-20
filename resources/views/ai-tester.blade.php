@@ -6,6 +6,7 @@
      data-latest="{{ $latest ? $latest->toJson() : 'null' }}"
      data-latest-url="{{ route('dashboard.latest') }}"
      data-store-url="{{ route('ai-tester.runs.store') }}"
+     data-proxy-url="{{ route('ai-tester.proxy') }}"
      data-endpoint-url="{{ route('ai-tester.endpoint.update') }}"
      data-ai-endpoint="{{ $settings->ai_endpoint }}"
      data-past-runs="{{ $pastRuns->toJson() }}"
@@ -498,6 +499,7 @@
     const REQUEST_TIMEOUT_MS = 90000;
 
     const storeUrl    = el.dataset.storeUrl;
+    const proxyUrl    = el.dataset.proxyUrl;
     const endpointUrl = el.dataset.endpointUrl;
     const pastRuns    = JSON.parse(el.dataset.pastRuns || '{}');
 
@@ -666,30 +668,33 @@
 
         const start = Date.now();
         try {
-            const res  = await fetch(url, {
+            const res  = await fetch(proxyUrl, {
                 method:  'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body:    JSON.stringify(payload),
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept':       'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body:    JSON.stringify({ url, payload }),
                 signal:  ctrl.signal,
             });
             const ms   = Date.now() - start;
-            const text = await res.text();
-            let display = text;
-            try { display = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+            const json = await res.json();
+
+            let display = json.body ?? '';
+            try { display = JSON.stringify(JSON.parse(json.body), null, 2); } catch {}
 
             // Try to surface schema hints on 422
-            let hint = null;
-            if (res.status === 422) {
+            if (json.status === 422) {
                 try {
-                    const parsed = JSON.parse(text);
+                    const parsed = JSON.parse(json.body);
                     const docsUrl = new URL('/docs', url).href;
-                    hint = `Schema mismatch — check the API docs at ${docsUrl}\n\nValidation detail:\n` +
-                           JSON.stringify(parsed?.detail ?? parsed, null, 2);
-                    display = hint;
+                    display = `Schema mismatch — check the API docs at ${docsUrl}\n\nValidation detail:\n` +
+                              JSON.stringify(parsed?.detail ?? parsed, null, 2);
                 } catch {}
             }
 
-            return { ok: res.ok, status: res.status, statusText: res.statusText, elapsed: ms, display };
+            return { ok: json.ok, status: json.status, statusText: json.statusText, elapsed: json.elapsed ?? ms, display };
         } finally {
             clearTimeout(timer);
             clearInterval(ticker);
