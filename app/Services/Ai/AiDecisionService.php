@@ -23,7 +23,9 @@ class AiDecisionService
     {
         $settings = FarmSetting::current();
 
-        if (! config('farm.ai_endpoint')) {
+        $aiEndpoint = $settings->ai_endpoint ?? config('farm.ai_endpoint');
+
+        if (! $aiEndpoint) {
             Log::info('AI decision skipped — no endpoint configured.');
 
             return;
@@ -70,6 +72,7 @@ class AiDecisionService
 
         $reading->update([
             'pump_command' => $decision['pump'],
+            'ai_reason'    => $decision['reason'] ?? null,
         ]);
 
         Cache::put('pump_command', $decision['pump']);

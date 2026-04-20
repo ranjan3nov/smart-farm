@@ -5,9 +5,11 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PumpOverrideController;
 use App\Http\Controllers\SettingsController;
+use App\Jobs\MakePumpDecision;
 use App\Models\AiTestRun;
 use App\Models\FarmSetting;
 use App\Models\SensorReading;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 // Guest routes
@@ -41,6 +43,17 @@ Route::middleware('auth')->group(function () {
     Route::put('/password/change', [AuthController::class, 'changePassword'])->name('password.update');
 
     Route::post('/pump/override', PumpOverrideController::class)->name('pump.override');
+
+    Route::post('/ai/trigger', function () {
+        $latest = SensorReading::latest()->first();
+        if (! $latest) {
+            return back()->with('ai_trigger_error', 'No sensor data available yet.');
+        }
+        Cache::forget('ai_decision_throttle');
+        MakePumpDecision::dispatch($latest);
+
+        return back()->with('ai_trigger_success', true);
+    })->name('ai.trigger');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });

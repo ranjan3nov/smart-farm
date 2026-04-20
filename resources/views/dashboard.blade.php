@@ -396,7 +396,29 @@
 
         {{-- Pump decisions --}}
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
-            <h2 class="text-sm font-semibold text-white mb-4">Pump Decisions</h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-semibold text-white">Pump Decisions</h2>
+                <form method="POST" action="{{ route('ai.trigger') }}">
+                    @csrf
+                    <button type="submit"
+                        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-emerald-500/10 text-gray-400 hover:text-emerald-400 border border-gray-700 hover:border-emerald-500/30 transition-colors"
+                        title="Run AI decision now, bypassing the interval">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Run AI Now
+                    </button>
+                </form>
+            </div>
+            @if(session('ai_trigger_success'))
+                <div class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs rounded-lg px-3 py-2 mb-3">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    AI decision queued — refresh in a moment to see the result.
+                </div>
+            @endif
+            @if(session('ai_trigger_error'))
+                <div class="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-lg px-3 py-2 mb-3">
+                    {{ session('ai_trigger_error') }}
+                </div>
+            @endif
             <div id="activity-log" class="flex flex-col gap-2">
                 @forelse($activityLog as $entry)
                     <div class="flex items-start gap-3 py-2 border-b border-gray-800/60 last:border-0">

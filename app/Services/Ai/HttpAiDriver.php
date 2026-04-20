@@ -21,9 +21,8 @@ class HttpAiDriver implements AiDriverInterface
         }
 
         try {
-            $request = Http::timeout(10)
-                ->connectTimeout(5)
-                ->retry(2, 1000);
+            $request = Http::timeout(60)
+                ->connectTimeout(15);
 
             if ($this->apiKey) {
                 $request = $request->withHeader('X-API-Key', $this->apiKey);
@@ -37,8 +36,6 @@ class HttpAiDriver implements AiDriverInterface
                 'pump' => strtoupper($data['pump'] ?? 'OFF') === 'ON' ? 'ON' : 'OFF',
                 'reason' => $data['reason'] ?? 'No reason provided.',
             ];
-        } catch (ConnectionException $e) {
-            Log::warning('AI driver connection failed', ['error' => $e->getMessage()]);
         } catch (\Throwable $e) {
             Log::error('AI driver error', ['error' => $e->getMessage()]);
         }
