@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FarmSetting;
 use App\Models\PumpSession;
 use App\Models\SensorReading;
+use App\Services\Weather\OpenMeteoClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,8 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
+    public function __construct(private readonly OpenMeteoClient $weather) {}
+
     public function rawData(): JsonResponse
     {
         $user = Auth::user();
@@ -82,8 +85,13 @@ class DashboardController extends Controller
             }
         }
 
+        $weather = ($settings->latitude && $settings->longitude)
+            ? $this->weather->getForecast($settings->latitude, $settings->longitude)
+            : null;
+
         return view('dashboard', [
             'latest' => $latest,
+            'weather' => $weather,
             'recentReadings' => $recentReadings,
             'activityLog' => $activityLog,
             'lastSeen' => $lastSeen,

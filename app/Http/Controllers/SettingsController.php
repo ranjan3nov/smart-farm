@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateSettingsRequest;
 use App\Models\FarmSetting;
+use App\Services\PlantApiClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -11,9 +12,12 @@ use Illuminate\View\View;
 
 class SettingsController extends Controller
 {
-    public function show(): View
+    public function show(PlantApiClient $plants): View
     {
-        return view('settings', ['settings' => FarmSetting::current()]);
+        return view('settings', [
+            'settings' => FarmSetting::current(),
+            'plants' => $plants->all(),
+        ]);
     }
 
     public function update(UpdateSettingsRequest $request): RedirectResponse
@@ -31,9 +35,6 @@ class SettingsController extends Controller
             'moisture_max' => $data['moisture_max'],
             'ai_decision_interval_minutes' => $data['ai_decision_interval'],
             'send_interval_seconds' => $data['send_interval'],
-            'ai_driver' => $data['ai_driver'],
-            'ai_endpoint' => $data['ai_endpoint'] ?? null,
-            'ai_api_key' => $data['ai_api_key'] ?? null,
         ]);
 
         return back()->with('success', 'Settings saved.');

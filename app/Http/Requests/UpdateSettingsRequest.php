@@ -24,9 +24,6 @@ class UpdateSettingsRequest extends FormRequest
             'moisture_max' => ['required', 'integer', 'min:0', 'max:100', 'gt:moisture_threshold'],
             'ai_decision_interval' => ['required', 'integer', 'min:1', 'max:60'],
             'send_interval' => ['required', 'integer', 'min:10', 'max:3600'],
-            'ai_driver' => ['required', 'string', 'in:http,openai,anthropic'],
-            'ai_endpoint' => ['nullable', 'url'],
-            'ai_api_key' => ['nullable', 'string'],
         ];
     }
 }

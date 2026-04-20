@@ -27,11 +27,47 @@
                 <p class="text-xs text-gray-500 mt-0.5">Track history per plant. Reset when you change the plant.</p>
             </div>
 
-            <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-medium text-gray-300">Plant Name <span class="text-gray-600 font-normal">(optional)</span></label>
-                <input name="plant_name" type="text" value="{{ old('plant_name', auth()->user()->plant_name) }}"
-                       placeholder="e.g. Tomatoes, Basil, Peppers..."
-                       class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('plant_name') border-red-500 @enderror">
+            <div class="flex flex-col gap-1.5" x-data="plantPicker({{ json_encode($plants) }}, '{{ old('plant_name', auth()->user()->plant_name) }}')">
+                <label class="text-sm font-medium text-gray-300">Plant <span class="text-gray-600 font-normal">(optional)</span></label>
+
+                @if(count($plants) > 0)
+                    <div class="relative">
+                        <input type="text" x-model="search" @focus="open = true" @click.outside="open = false"
+                               placeholder="Search plants..."
+                               class="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
+
+                        <div x-show="open && filtered.length > 0" x-cloak
+                             class="absolute z-10 mt-1 w-full bg-gray-800 border border-gray-700 rounded-xl overflow-hidden shadow-xl">
+                            <div class="max-h-52 overflow-y-auto">
+                                <button type="button" @click="select(null)"
+                                        class="w-full text-left px-4 py-2.5 text-sm text-gray-500 hover:bg-gray-700 transition-colors">
+                                    — None —
+                                </button>
+                                <template x-for="plant in filtered" :key="plant.id">
+                                    <button type="button" @click="select(plant)"
+                                            :class="selected && selected.name === plant.name ? 'bg-emerald-500/10 text-emerald-400' : 'text-white hover:bg-gray-700'"
+                                            class="w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center justify-between gap-2">
+                                        <span x-text="plant.name"></span>
+                                        <span class="text-xs text-gray-500 capitalize" x-text="plant.category.replace('_', ' ')"></span>
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="plant_name" :value="selected ? selected.name : ''">
+
+                    <p x-show="selected" class="text-xs text-gray-500">
+                        Moisture <span class="text-gray-300" x-text="selected ? selected.moisture_min + '–' + selected.moisture_max + '%' : ''"></span>
+                        · Ideal <span class="text-gray-300" x-text="selected ? selected.ideal_moisture + '%' : ''"></span>
+                    </p>
+                @else
+                    <input name="plant_name" type="text" value="{{ old('plant_name', auth()->user()->plant_name) }}"
+                           placeholder="e.g. Tomatoes, Basil, Peppers..."
+                           class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
+                    <p class="text-xs text-gray-500">Plant list unavailable — enter manually.</p>
+                @endif
+
                 @error('plant_name')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
             </div>
 
@@ -61,22 +97,22 @@
 
             <div class="flex flex-col gap-1.5">
                 <label class="text-sm font-medium text-gray-300">System Name</label>
-                <input name="farm_name" type="text" value="{{ old('farm_name', config('farm.name')) }}"
+                <input name="farm_name" type="text" value="{{ old('farm_name', $settings->name) }}"
                        class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('farm_name') border-red-500 @enderror">
                 @error('farm_name')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
             </div>
 
-<div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-300">Latitude</label>
-                    <input name="latitude" type="number" step="0.0001" value="{{ old('latitude', config('farm.latitude')) }}"
+                    <input name="latitude" type="number" step="0.0001" value="{{ old('latitude', $settings->latitude) }}"
                            placeholder="e.g. 28.6139"
                            class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
                     <p class="text-xs text-gray-500">Required for weather forecast</p>
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-300">Longitude</label>
-                    <input name="longitude" type="number" step="0.0001" value="{{ old('longitude', config('farm.longitude')) }}"
+                    <input name="longitude" type="number" step="0.0001" value="{{ old('longitude', $settings->longitude) }}"
                            placeholder="e.g. 77.2090"
                            class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
                 </div>
@@ -90,17 +126,26 @@
             <div class="grid grid-cols-2 gap-4">
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-300">Tank Height (cm)</label>
-                    <input name="tank_height_cm" type="number" value="{{ old('tank_height_cm', config('farm.tank_height_cm')) }}"
+                    <input name="tank_height_cm" type="number" value="{{ old('tank_height_cm', $settings->tank_height_cm) }}"
                            class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('tank_height_cm') border-red-500 @enderror">
                     <p class="text-xs text-gray-500">Distance from sensor to water surface when tank is empty. Sent to the device each sync — no firmware change needed.</p>
                     @error('tank_height_cm')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                 </div>
                 <div class="flex flex-col gap-1.5">
                     <label class="text-sm font-medium text-gray-300">Dry Soil Threshold (%)</label>
-                    <input name="moisture_threshold" type="number" min="0" max="100" value="{{ old('moisture_threshold', config('farm.moisture_threshold')) }}"
-                           class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
+                    <input name="moisture_threshold" type="number" min="0" max="100" value="{{ old('moisture_threshold', $settings->moisture_threshold) }}"
+                           class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('moisture_threshold') border-red-500 @enderror">
                     <p class="text-xs text-gray-500">AI considers watering below this %</p>
+                    @error('moisture_threshold')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
                 </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-sm font-medium text-gray-300">Well-watered Threshold (%)</label>
+                <input name="moisture_max" type="number" min="0" max="100" value="{{ old('moisture_max', $settings->moisture_max) }}"
+                       class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors @error('moisture_max') border-red-500 @enderror">
+                <p class="text-xs text-gray-500">AI stops watering above this %. Must be higher than the dry threshold.</p>
+                @error('moisture_max')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
             </div>
         </div>
 
@@ -108,34 +153,31 @@
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5 flex flex-col gap-4">
             <div>
                 <h2 class="text-sm font-semibold text-white">AI Configuration</h2>
-                <p class="text-xs text-gray-500 mt-0.5">Leave endpoint blank to disable AI decisions.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Endpoint and API key are set via <code class="bg-gray-800 px-1 py-0.5 rounded text-gray-300">.env</code> — <code class="bg-gray-800 px-1 py-0.5 rounded text-gray-300">FARM_AI_ENDPOINT</code> and <code class="bg-gray-800 px-1 py-0.5 rounded text-gray-300">FARM_AI_API_KEY</code>.</p>
             </div>
 
-            <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-medium text-gray-300">AI Endpoint URL</label>
-                <input name="ai_endpoint" type="url" value="{{ old('ai_endpoint', config('farm.ai.endpoint')) }}"
-                       placeholder="https://your-model.example.com/predict"
-                       class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors font-mono @error('ai_endpoint') border-red-500 @enderror">
-                @error('ai_endpoint')<p class="text-xs text-red-400">{{ $message }}</p>@enderror
-            </div>
-
-            <div class="flex flex-col gap-1.5">
-                <label class="text-sm font-medium text-gray-300">API Key <span class="text-gray-600 font-normal">(optional)</span></label>
-                <input name="ai_api_key" type="password" value="{{ old('ai_api_key', config('farm.ai.api_key')) }}"
-                       placeholder="sk-..."
-                       class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors font-mono">
-            </div>
+            @if(config('farm.ai_endpoint'))
+                <div class="flex items-center gap-2 text-xs text-emerald-400">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    Endpoint configured: <code class="font-mono text-gray-300">{{ config('farm.ai_endpoint') }}</code>
+                </div>
+            @else
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span class="w-1.5 h-1.5 rounded-full bg-gray-600"></span>
+                    No endpoint set — AI decisions are disabled.
+                </div>
+            @endif
 
             <div class="flex flex-col gap-1.5">
                 <label class="text-sm font-medium text-gray-300">Decision Interval <span class="text-gray-600 font-normal">(minutes)</span></label>
-                <input name="ai_decision_interval" type="number" min="1" max="60" value="{{ old('ai_decision_interval', config('farm.ai_decision_interval_minutes')) }}"
+                <input name="ai_decision_interval" type="number" min="1" max="60" value="{{ old('ai_decision_interval', $settings->ai_decision_interval_minutes) }}"
                        class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
                 <p class="text-xs text-gray-500">How often the AI re-evaluates the pump. Default: 5 minutes.</p>
             </div>
 
             <div class="flex flex-col gap-1.5">
                 <label class="text-sm font-medium text-gray-300">Send Interval <span class="text-gray-600 font-normal">(seconds)</span></label>
-                <input name="send_interval" type="number" min="10" max="3600" value="{{ old('send_interval', config('farm.send_interval_seconds')) }}"
+                <input name="send_interval" type="number" min="10" max="3600" value="{{ old('send_interval', $settings->send_interval_seconds) }}"
                        class="bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-colors">
                 <p class="text-xs text-gray-500">How often the device sends readings in normal mode. Alert mode always uses 20s. Default: 300s.</p>
             </div>
@@ -167,7 +209,7 @@
                         <div class="flex items-center gap-2 text-xs text-gray-500">
                             <span class="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded font-mono font-medium">POST</span>
                             <span>Content-Type: application/json</span>
-                            @if(config('farm.ai.api_key'))
+                            @if(config('farm.ai_api_key'))
                                 <span>· Authorization: Bearer ••••</span>
                             @endif
                         </div>
@@ -240,4 +282,31 @@
 <form id="reset-plant-form" method="POST" action="{{ route('settings.plant.reset') }}" class="hidden">
     @csrf
 </form>
+
+<script>
+function plantPicker(plants, current) {
+    return {
+        plants,
+        search: current ?? '',
+        selected: plants.find(p => p.name === current) ?? null,
+        open: false,
+        get filtered() {
+            const q = this.search.toLowerCase();
+            return q.length < 1 ? this.plants : this.plants.filter(p => p.name.toLowerCase().includes(q));
+        },
+        select(plant) {
+            this.selected = plant;
+            this.search = plant ? plant.name : '';
+            this.open = false;
+
+            if (plant) {
+                const threshold = document.querySelector('[name="moisture_threshold"]');
+                const max = document.querySelector('[name="moisture_max"]');
+                if (threshold) threshold.value = Math.round(plant.moisture_min);
+                if (max) max.value = Math.round(plant.moisture_max);
+            }
+        },
+    };
+}
+</script>
 @endsection

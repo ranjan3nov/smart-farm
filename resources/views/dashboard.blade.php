@@ -40,6 +40,14 @@
                 </span>
             </div>
 
+            {{-- Force refresh button --}}
+            <button id="btn-refresh" onclick="pollLatest()"
+                class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                title="Fetch latest reading now">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582M20 20v-5h-.581M5.635 15A8 8 0 104.582 9H4"/></svg>
+                Refresh
+            </button>
+
             {{-- Raw data button --}}
             <a href="{{ route('dashboard.raw') }}" target="_blank"
                class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
@@ -147,9 +155,9 @@
                 </div>
             </div>
             <div>
-                <div id="temp-value" class="text-2xl font-bold text-white">{{ $latest ? $latest->temp . '°C' : '—' }}</div>
+                <div id="temp-value" class="text-2xl font-bold text-white">{{ $latest && $latest->temp !== null ? $latest->temp . '°C' : '—' }}</div>
                 <div id="temp-status" class="text-xs text-gray-400 mt-0.5">
-                    @if($latest)
+                    @if($latest && $latest->temp !== null)
                         {{ $latest->temp < 0 ? 'Freezing' : ($latest->temp < 10 ? 'Cold' : ($latest->temp < 25 ? 'Comfortable' : 'Hot')) }}
                     @else
                         No data
@@ -167,9 +175,9 @@
                 </div>
             </div>
             <div>
-                <div id="humidity-value" class="text-2xl font-bold text-white">{{ $latest ? $latest->humidity . '%' : '—' }}</div>
+                <div id="humidity-value" class="text-2xl font-bold text-white">{{ $latest && $latest->humidity !== null ? $latest->humidity . '%' : '—' }}</div>
                 <div id="humidity-status" class="text-xs text-gray-400 mt-0.5">
-                    @if($latest)
+                    @if($latest && $latest->humidity !== null)
                         {{ $latest->humidity < 20 ? 'Very dry air' : ($latest->humidity < 50 ? 'Comfortable' : 'Humid') }}
                     @else
                         No data
@@ -287,6 +295,60 @@
         </div>
 
     </div>
+
+    {{-- Weather Forecast --}}
+    @if($weather)
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-white">Weather Forecast</h2>
+            <span class="text-xs text-gray-600">via Open-Meteo · updated every 10 min</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+
+            {{-- Condition --}}
+            <div class="flex flex-col gap-1">
+                <span class="text-xs text-gray-500 font-medium uppercase tracking-wide">Condition</span>
+                <span class="text-sm font-semibold text-white">{{ $weather['description'] }}</span>
+            </div>
+
+            {{-- Outside temp --}}
+            <div class="flex flex-col gap-1">
+                <span class="text-xs text-gray-500 font-medium uppercase tracking-wide">Outside Temp</span>
+                <span class="text-sm font-semibold text-white">
+                    {{ $weather['temp_current'] !== null ? $weather['temp_current'] . '°C' : '—' }}
+                </span>
+            </div>
+
+            {{-- Rain probability --}}
+            <div class="flex flex-col gap-1">
+                <span class="text-xs text-gray-500 font-medium uppercase tracking-wide">Rain next 6h</span>
+                <span class="text-sm font-semibold {{ ($weather['rain_probability_next_6h'] ?? 0) >= 60 ? 'text-blue-400' : 'text-white' }}">
+                    {{ $weather['rain_probability_next_6h'] !== null ? $weather['rain_probability_next_6h'] . '%' : '—' }}
+                </span>
+            </div>
+
+            {{-- Wind --}}
+            <div class="flex flex-col gap-1">
+                <span class="text-xs text-gray-500 font-medium uppercase tracking-wide">Wind</span>
+                <span class="text-sm font-semibold text-white">
+                    {{ $weather['wind_speed'] !== null ? $weather['wind_speed'] . ' km/h' : '—' }}
+                </span>
+            </div>
+
+        </div>
+
+        {{-- 6-hour temp sparkline --}}
+        @if(!empty($weather['temp_next_6h']))
+        <div class="mt-4">
+            <div class="flex items-center gap-2 mb-2">
+                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                <span class="text-xs text-gray-500">6-hour temperature outlook</span>
+            </div>
+            <canvas id="chart-weather-temp" height="50"></canvas>
+        </div>
+        @endif
+    </div>
+    @endif
 
     {{-- Charts + Activity --}}
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
@@ -606,6 +668,7 @@
             schedulePoll();
         }
     }
+    window.pollLatest = pollLatest;
 
     schedulePoll();
 
@@ -647,12 +710,12 @@
         setWidth('rain-bar', data.rain_percent);
 
         // Temp
-        setText('temp-value', data.temp + '°C');
-        setText('temp-status', tempStatus(data.temp));
+        setText('temp-value', data.temp != null ? data.temp + '°C' : '—');
+        setText('temp-status', data.temp != null ? tempStatus(data.temp) : 'No data');
 
         // Humidity
-        setText('humidity-value', data.humidity + '%');
-        setText('humidity-status', humidityStatus(data.humidity));
+        setText('humidity-value', data.humidity != null ? data.humidity + '%' : '—');
+        setText('humidity-status', data.humidity != null ? humidityStatus(data.humidity) : 'No data');
 
         // Tank
         const tankEmpty = data.tank_status === 'EMPTY';
@@ -713,6 +776,43 @@
         charts.humidity.data.datasets[0].data = readings.map(r => r.humidity);
         Object.values(charts).forEach(c => c.update());
     }
+
+    // --- Weather sparkline ---
+    @if(!empty($weather['temp_next_6h']))
+    (function () {
+        const temps = @json($weather['temp_next_6h']);
+        const ctx = document.getElementById('chart-weather-temp');
+        if (!ctx) return;
+        new Chart(ctx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: temps.map((_, i) => `+${i}h`),
+                datasets: [{
+                    data: temps,
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249,115,22,0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 2,
+                    pointBackgroundColor: '#f97316',
+                    borderWidth: 2,
+                }],
+            },
+            options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: ctx => ctx.parsed.y + '°C' } },
+                },
+                scales: {
+                    x: { ticks: { color: '#6b7280', font: { size: 10 } }, grid: { display: false }, border: { display: false } },
+                    y: { display: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', font: { size: 10 }, callback: v => v + '°C' }, border: { display: false } },
+                },
+            },
+        });
+    })();
+    @endif
 
     // --- Reverb live updates ---
     window.Echo.channel('farm').listen('SensorDataReceived', (data) => {

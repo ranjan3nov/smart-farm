@@ -16,9 +16,6 @@ class FarmSetting extends Model
         'moisture_max',
         'ai_decision_interval_minutes',
         'send_interval_seconds',
-        'ai_driver',
-        'ai_endpoint',
-        'ai_api_key',
     ];
 
     protected function casts(): array

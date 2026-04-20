@@ -11,6 +11,17 @@ class StoreSensorDataRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // Devices (e.g. Python/MicroPython) may send the string "nan" when a
+        // sensor read fails. Treat those as missing values rather than letting
+        // them fail the `numeric` rule and reject the whole request.
+        $this->merge(array_map(
+            fn ($v) => (is_string($v) && strtolower($v) === 'nan') ? null : $v,
+            $this->all()
+        ));
+    }
+
     /** @return array<string, array<string>> */
     public function rules(): array
     {
