@@ -26,7 +26,7 @@ class HttpAiDriver implements AiDriverInterface
                 ->retry(2, 1000);
 
             if ($this->apiKey) {
-                $request = $request->withToken($this->apiKey);
+                $request = $request->withHeader('X-API-Key', $this->apiKey);
             }
 
             $response = $request->post($this->endpoint, $payload)->throw();
