@@ -2,10 +2,21 @@
 
 use App\Events\SensorDataReceived;
 use App\Jobs\MakePumpDecision;
+use App\Models\FarmSetting;
 use App\Models\PumpSession;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Queue;
+
+beforeEach(function () {
+    FarmSetting::create([
+        'tank_height_cm' => 20,
+        'moisture_threshold' => 30,
+        'moisture_max' => 70,
+        'send_interval_seconds' => 300,
+        'ai_decision_interval_minutes' => 5,
+    ]);
+});
 
 $validPayload = [
     'moisture' => 2000,

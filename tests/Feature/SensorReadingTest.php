@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\FarmSetting;
 use App\Models\SensorReading;
 
 it('calculates moisture percent correctly', function () {
@@ -22,7 +23,7 @@ it('calculates rain percent correctly', function () {
 });
 
 it('calculates tank fill percent correctly', function () {
-    config(['farm.tank_height_cm' => 20]);
+    FarmSetting::create(['tank_height_cm' => 20]);
 
     $reading = SensorReading::factory()->make(['water_dist' => 5.0]);
     expect($reading->tank_fill_percent)->toBe(75);
