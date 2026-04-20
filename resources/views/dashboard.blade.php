@@ -41,7 +41,7 @@
             </div>
 
             {{-- Force refresh button --}}
-            <button id="btn-refresh" onclick="pollLatest()"
+            <button id="btn-refresh" onclick="pollLatest(true)"
                 class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors"
                 title="Fetch latest reading now">
                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582M20 20v-5h-.581M5.635 15A8 8 0 104.582 9H4"/></svg>
@@ -419,7 +419,7 @@
                     {{ session('ai_trigger_error') }}
                 </div>
             @endif
-            <div id="activity-log" class="flex flex-col gap-2">
+            <div id="activity-log" class="flex flex-col gap-2 overflow-y-auto max-h-72">
                 @forelse($activityLog as $entry)
                     <div class="flex items-start gap-3 py-2 border-b border-gray-800/60 last:border-0">
                         <div class="w-5 h-5 rounded-full shrink-0 flex items-center justify-center mt-0.5
@@ -674,9 +674,10 @@
         pollTimer = setTimeout(pollLatest, (sendIntervalSecs + 5) * 1000);
     }
 
-    async function pollLatest() {
+    async function pollLatest(force = false) {
         try {
-            const res = await fetch(latestUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+            const url = force ? latestUrl + '?force=1' : latestUrl;
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
             if (!res.ok) { return; }
             const json = await res.json();
             if (json.reading) {

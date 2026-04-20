@@ -22,11 +22,15 @@ class SensorDataController extends Controller
         // Track last-seen for offline detection
         Cache::put('device_last_seen', now()->timestamp, now()->addMinutes(5));
 
-        // Dispatch AI decision job at most once per configured interval
+        // When pump is ON, run AI on every reading so it can turn off quickly.
+        // Otherwise throttle to the configured interval.
+        $pumpIsOn = Cache::get('pump_command') === 'ON';
         $throttleKey = 'ai_decision_throttle';
 
-        if (! Cache::has($throttleKey)) {
-            Cache::put($throttleKey, true, now()->addMinutes($settings->ai_decision_interval_minutes));
+        if ($pumpIsOn || ! Cache::has($throttleKey)) {
+            if (! $pumpIsOn) {
+                Cache::put($throttleKey, true, now()->addMinutes($settings->ai_decision_interval_minutes));
+            }
             MakePumpDecision::dispatch($reading);
         }
 
@@ -55,14 +59,21 @@ class SensorDataController extends Controller
 
         Cache::put('pump_command_previous', $pumpCommand, now()->addHours(1));
 
-        // Tell the device how long to wait before the next send.
-        // Alert mode (20s): pump is running, soil is dry, or tank is empty.
-        // Normal mode: use configured send interval.
-        $isAlertState = $pumpCommand === 'ON'
-            || $reading->tank_status === 'EMPTY'
-            || $reading->moisture_percent < $settings->moisture_threshold;
+        // Pump ON → poll every 3s so the AI stop command reaches the device quickly.
+        // Other alert states (dry soil, empty tank) → 20s.
+        // Normal → configured interval.
+        if ($pumpCommand === 'ON') {
+            $nextInterval = 3;
+        } elseif ($reading->tank_status === 'EMPTY' || $reading->moisture_percent < $settings->moisture_threshold) {
+            $nextInterval = 20;
+        } else {
+            $nextInterval = $settings->send_interval_seconds;
+        }
 
-        $nextInterval = $isAlertState ? 20 : $settings->send_interval_seconds;
+        // If the dashboard requested an immediate refresh, send data again very soon
+        if (Cache::pull('device_force_immediate')) {
+            $nextInterval = 2;
+        }
 
         // Store so dashboard can show the correct countdown
         Cache::put('device_next_interval', $nextInterval, now()->addHours(1));

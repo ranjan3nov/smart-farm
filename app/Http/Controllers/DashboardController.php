@@ -32,6 +32,10 @@ class DashboardController extends Controller
 
     public function latest(): JsonResponse
     {
+        if (request()->boolean('force')) {
+            Cache::put('device_force_immediate', true, 60);
+        }
+
         $latest = SensorReading::latest()->first();
         $lastSeenTimestamp = Cache::get('device_last_seen');
 
